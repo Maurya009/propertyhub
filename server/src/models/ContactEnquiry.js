@@ -8,12 +8,15 @@ const contactEnquirySchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      minlength: 2,
+      maxlength: 100,
     },
 
     phone: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 20,
     },
 
     email: {
@@ -21,12 +24,15 @@ const contactEnquirySchema = new mongoose.Schema(
       required: true,
       trim: true,
       lowercase: true,
+      maxlength: 254,
     },
 
     message: {
       type: String,
       required: true,
       trim: true,
+      minlength: 5,
+      maxlength: 2000,
     },
 
     status: {

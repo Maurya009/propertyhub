@@ -39,7 +39,8 @@ export default function NewPropertyPage() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [uploadingMainImage, setUploadingMainImage] = useState(false);
+  const [uploadingMainImage, setUploadingMainImage] =
+    useState(false);
   const [uploadingAdditionalImages, setUploadingAdditionalImages] =
     useState(false);
 
@@ -61,28 +62,27 @@ export default function NewPropertyPage() {
 
   // Upload single image to Cloudinary
   const uploadImage = async (file: File) => {
-    const token = localStorage.getItem("adminToken");
-
-    if (!token) {
-      throw new Error("Please login again");
-    }
-
     const formData = new FormData();
 
     formData.append("image", file);
 
     const res = await fetch(`${API_URL}/upload/image`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
       body: formData,
     });
 
     const data = await res.json();
 
+    if (res.status === 401) {
+      window.location.href = "/admin/login";
+      throw new Error("Please login again");
+    }
+
     if (!res.ok || !data.success) {
-      throw new Error(data.message || "Image upload failed");
+      throw new Error(
+        data.message || "Image upload failed"
+      );
     }
 
     return data.data.url;
@@ -188,14 +188,10 @@ export default function NewPropertyPage() {
     setError("");
 
     try {
-      const token = localStorage.getItem("adminToken");
-
-      if (!token) {
-        throw new Error("Please login again");
-      }
-
       if (!form.image) {
-        throw new Error("Please upload a main property image");
+        throw new Error(
+          "Please upload a main property image"
+        );
       }
 
       const imageList = form.images
@@ -212,8 +208,8 @@ export default function NewPropertyPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           title: form.title,
           location: form.location,
@@ -233,7 +229,6 @@ export default function NewPropertyPage() {
       const data = await res.json();
 
       if (res.status === 401) {
-        localStorage.removeItem("adminToken");
         window.location.href = "/admin/login";
         return;
       }

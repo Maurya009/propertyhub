@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 const jwt = require("jsonwebtoken");
@@ -16,15 +15,38 @@ const registerAdmin = async (req, res) => {
       });
     }
 
-    if (password.length < 6) {
+    const cleanName = String(name).trim();
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanPassword = String(password);
+
+    // Name validation
+    if (cleanName.length < 2 || cleanName.length > 100) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 6 characters",
+        message: "Name must be between 2 and 100 characters",
+      });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
+    }
+
+    // Password validation
+    if (cleanPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters",
       });
     }
 
     const existingAdmin = await Admin.findOne({
-      email: email.toLowerCase(),
+      email: cleanEmail,
     });
 
     if (existingAdmin) {
@@ -34,11 +56,11 @@ const registerAdmin = async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(cleanPassword, 12);
 
     const admin = await Admin.create({
-      name,
-      email: email.toLowerCase(),
+      name: cleanName,
+      email: cleanEmail,
       password: hashedPassword,
       role: "admin",
     });
@@ -58,7 +80,7 @@ const registerAdmin = async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to create admin",
     });
   }
 };
@@ -74,8 +96,29 @@ const loginAdmin = async (req, res) => {
       });
     }
 
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanPassword = String(password);
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
+    }
+
+    // Password length check
+    if (cleanPassword.length < 8) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
     const admin = await Admin.findOne({
-      email: email.toLowerCase(),
+      email: cleanEmail,
     });
 
     if (!admin) {
@@ -86,7 +129,7 @@ const loginAdmin = async (req, res) => {
     }
 
     const isPasswordCorrect = await bcrypt.compare(
-      password,
+      cleanPassword,
       admin.password
     );
 
@@ -97,9 +140,19 @@ const loginAdmin = async (req, res) => {
       });
     }
 
+    // JWT secret must exist
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is missing in environment variables");
+
+      return res.status(500).json({
+        success: false,
+        message: "Server authentication configuration error",
+      });
+    }
+
     const token = jwt.sign(
       {
-        id: admin._id,
+        id: admin._id.toString(),
         email: admin.email,
         role: admin.role,
       },
@@ -109,10 +162,21 @@ const loginAdmin = async (req, res) => {
       }
     );
 
+    // Store JWT in a secure HttpOnly cookie
+    res.cookie("adminToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? "none"
+          : "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
     res.json({
       success: true,
       message: "Login successful",
-      token,
       data: {
         id: admin._id,
         name: admin.name,
@@ -125,12 +189,29 @@ const loginAdmin = async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Login failed",
     });
   }
+};
+const logoutAdmin = (req, res) => {
+  res.clearCookie("adminToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite:
+      process.env.NODE_ENV === "production"
+        ? "none"
+        : "lax",
+    path: "/",
+  });
+
+  return res.json({
+    success: true,
+    message: "Logout successful",
+  });
 };
 
 module.exports = {
   registerAdmin,
   loginAdmin,
+  logoutAdmin,
 };

@@ -87,19 +87,12 @@ export default function EditPropertyPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-  
+
     try {
       setSaving(true);
       setError("");
       setMessage("");
-  
-      const token = localStorage.getItem("adminToken");
-  
-      if (!token) {
-        router.push("/admin/login");
-        return;
-      }
-  
+
       const payload = {
         title: form.title,
         location: form.location,
@@ -120,30 +113,29 @@ export default function EditPropertyPage() {
           .map((item) => item.trim())
           .filter(Boolean),
       };
-  
+
       const res = await fetch(`${API_URL}/properties/${id}`, {
         method: "PUT",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
-  
+
       const data = await res.json();
-  
+
       if (res.status === 401) {
-        localStorage.removeItem("adminToken");
         router.push("/admin/login");
         return;
       }
-  
+
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Failed to update property");
       }
-  
+
       setMessage("Property updated successfully!");
-  
+
       setTimeout(() => {
         router.push("/admin");
       }, 1000);

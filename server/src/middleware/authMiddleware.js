@@ -1,37 +1,51 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 const jwt = require("jsonwebtoken");
 
 const protectAdmin = (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is missing in environment variables");
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(500).json({
+        success: false,
+        message: "Server authentication configuration error",
+      });
+    }
+
+    // Read JWT from HttpOnly cookie
+    const token = req.cookies?.adminToken;
+
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: "Authentication required",
       });
     }
 
-    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
-
-    if (decoded.role !== "admin") {
+    if (
+      !decoded ||
+      typeof decoded !== "object" ||
+      decoded.role !== "admin"
+    ) {
       return res.status(403).json({
         success: false,
         message: "Admin access required",
       });
     }
 
-    req.admin = decoded;
+    req.admin = {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+    };
 
     next();
   } catch (error) {
+    console.error("Admin authentication failed:", error.message);
+
     return res.status(401).json({
       success: false,
       message: "Invalid or expired token",

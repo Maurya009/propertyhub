@@ -13,32 +13,40 @@ const enquirySchema = new mongoose.Schema(
     propertyTitle: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 200,
     },
 
     name: {
       type: String,
       required: true,
       trim: true,
+      minlength: 2,
+      maxlength: 100,
     },
 
     phone: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 20,
     },
 
     email: {
       type: String,
       required: true,
       trim: true,
+      lowercase: true,
+      maxlength: 254,
     },
 
     message: {
       type: String,
       default: "",
+      trim: true,
+      maxlength: 2000,
     },
 
-    // Enquiry tracking status
     status: {
       type: String,
       enum: ["New", "Contacted", "Closed"],

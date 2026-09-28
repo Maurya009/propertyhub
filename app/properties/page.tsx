@@ -5,6 +5,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 type Property = {
   _id: string;
@@ -337,61 +339,7 @@ export default function PropertiesPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      {/* HEADER */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
-          <a
-            href="/"
-            className="text-2xl font-bold"
-          >
-            PROPERTY<span className="text-amber-500">HUB</span>
-          </a>
-
-          <nav className="hidden gap-8 text-sm font-medium md:flex">
-            <a
-              href="/"
-              className="hover:text-amber-600"
-            >
-              Home
-            </a>
-
-            <a
-              href="/properties"
-              className="text-amber-600"
-            >
-              Properties
-            </a>
-
-            <a
-              href="/#locations"
-              className="hover:text-amber-600"
-            >
-              Locations
-            </a>
-
-            <a
-              href="/#about"
-              className="hover:text-amber-600"
-            >
-              About Us
-            </a>
-
-            <a
-              href="/#contact"
-              className="hover:text-amber-600"
-            >
-              Contact
-            </a>
-          </nav>
-
-          <a
-            href="/properties"
-            className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white"
-          >
-            Get Started
-          </a>
-        </div>
-      </header>
+      <Header />
 
       {/* HERO */}
       <section className="bg-slate-950 px-6 py-20 text-white lg:px-8">
@@ -738,12 +686,7 @@ export default function PropertiesPage() {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-8 text-center text-sm text-slate-500">
-          © 2026 PROPERTYHUB. All rights reserved.
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }

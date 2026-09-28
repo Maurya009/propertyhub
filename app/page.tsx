@@ -2,6 +2,11 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import FavoriteButton from "./components/FavoriteButton";
+export const dynamic = "force-dynamic";
+
 
 type Property = {
   _id: string;
@@ -58,55 +63,7 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      {/* NAVBAR */}
-      <header className="absolute left-0 right-0 top-0 z-50">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
-          <Link
-            href="/"
-            className="text-2xl font-bold tracking-tight text-white"
-          >
-            PROPERTY<span className="text-amber-400">HUB</span>
-          </Link>
-
-          <nav className="hidden items-center gap-8 text-sm font-medium text-white md:flex">
-            <Link href="/" className="transition hover:text-amber-400">
-              Home
-            </Link>
-
-            <Link
-              href="/properties"
-              className="transition hover:text-amber-400"
-            >
-              Properties
-            </Link>
-
-            <a
-              href="#locations"
-              className="transition hover:text-amber-400"
-            >
-              Locations
-            </a>
-
-            <a href="#about" className="transition hover:text-amber-400">
-              About Us
-            </a>
-
-            <Link
-              href="/contact"
-              className="transition hover:text-amber-400"
-            >
-              Contact
-            </Link>
-          </nav>
-
-          <Link
-            href="/properties"
-            className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
-          >
-            Get Started
-          </Link>
-        </div>
-      </header>
+      <Header variant="overlay" />
 
       {/* HERO */}
       <section className="relative flex min-h-180 items-center overflow-hidden">
@@ -279,13 +236,8 @@ export default async function Home() {
                     {property.status || "For Sale"}
                   </span>
 
-                  <button
-                    type="button"
-                    aria-label="Add property to favourites"
-                    className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg shadow"
-                  >
-                    ♡
-                  </button>
+                  {/* WORKING FAVOURITE BUTTON */}
+                  <FavoriteButton propertyId={property._id} />
                 </div>
 
                 <div className="p-6">
@@ -456,24 +408,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-10 md:flex-row md:items-center md:justify-between lg:px-8">
-          <div>
-            <div className="text-xl font-bold">
-              PROPERTY<span className="text-amber-500">HUB</span>
-            </div>
-
-            <p className="mt-2 text-sm text-slate-500">
-              Helping you find a place to call home.
-            </p>
-          </div>
-
-          <p className="text-sm text-slate-400">
-            © 2026 PropertyHub. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }

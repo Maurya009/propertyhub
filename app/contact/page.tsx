@@ -3,6 +3,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { site } from "../lib/site";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -20,11 +23,11 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-  
+
     try {
       setLoading(true);
       setMessage("");
-  
+
       const res = await fetch(`${API_URL}/contact-enquiries`, {
         method: "POST",
         headers: {
@@ -32,15 +35,15 @@ export default function ContactPage() {
         },
         body: JSON.stringify(form),
       });
-  
+
       const data = await res.json();
-  
+
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Failed to submit enquiry");
       }
-  
+
       setMessage("Enquiry sent successfully!");
-  
+
       setForm({
         name: "",
         phone: "",
@@ -60,31 +63,7 @@ export default function ContactPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      {/* Header */}
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
-          <a
-            href="/"
-            className="text-2xl font-bold tracking-tight text-slate-900"
-          >
-            PROPERTY<span className="text-amber-500">HUB</span>
-          </a>
-
-          <nav className="hidden gap-8 text-sm font-medium md:flex">
-            <a href="/" className="hover:text-amber-500">
-              Home
-            </a>
-
-            <a href="/properties" className="hover:text-amber-500">
-              Properties
-            </a>
-
-            <a href="/contact" className="text-amber-500">
-              Contact
-            </a>
-          </nav>
-        </div>
-      </header>
+      <Header cta={null} />
 
       {/* Hero */}
       <section className="bg-slate-900 px-6 py-20 text-white">
@@ -122,30 +101,36 @@ export default function ContactPage() {
           </p>
 
           <div className="mt-8 space-y-5">
+            {/* Phone */}
             <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm text-slate-500">Phone</p>
+
               <a
-                href="tel:+919999999999"
+                href={`tel:${site.phone}`}
                 className="mt-1 block font-semibold hover:text-amber-500"
               >
-                +91 99999 99999
+                {site.phone}
               </a>
             </div>
 
+            {/* Email */}
             <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm text-slate-500">Email</p>
+
               <a
-                href="mailto:info@propertyhub.com"
+                href={`mailto:${site.email}`}
                 className="mt-1 block font-semibold hover:text-amber-500"
               >
-                info@propertyhub.com
+                {site.email}
               </a>
             </div>
 
+            {/* Office */}
             <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <p className="text-sm text-slate-500">Office</p>
+
               <p className="mt-1 font-semibold">
-                Delhi NCR, India
+                {site.address}
               </p>
             </div>
           </div>
@@ -160,6 +145,7 @@ export default function ContactPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            {/* Name + Phone */}
             <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-medium">
@@ -171,7 +157,10 @@ export default function ContactPage() {
                   required
                   value={form.name}
                   onChange={(e) =>
-                    setForm({ ...form, name: e.target.value })
+                    setForm({
+                      ...form,
+                      name: e.target.value,
+                    })
                   }
                   placeholder="Enter your name"
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-amber-400"
@@ -188,7 +177,10 @@ export default function ContactPage() {
                   required
                   value={form.phone}
                   onChange={(e) =>
-                    setForm({ ...form, phone: e.target.value })
+                    setForm({
+                      ...form,
+                      phone: e.target.value,
+                    })
                   }
                   placeholder="Enter phone number"
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-amber-400"
@@ -196,6 +188,7 @@ export default function ContactPage() {
               </div>
             </div>
 
+            {/* Email */}
             <div>
               <label className="mb-2 block text-sm font-medium">
                 Email
@@ -206,13 +199,17 @@ export default function ContactPage() {
                 required
                 value={form.email}
                 onChange={(e) =>
-                  setForm({ ...form, email: e.target.value })
+                  setForm({
+                    ...form,
+                    email: e.target.value,
+                  })
                 }
                 placeholder="Enter email address"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-amber-400"
               />
             </div>
 
+            {/* Message */}
             <div>
               <label className="mb-2 block text-sm font-medium">
                 Message
@@ -223,13 +220,17 @@ export default function ContactPage() {
                 rows={5}
                 value={form.message}
                 onChange={(e) =>
-                  setForm({ ...form, message: e.target.value })
+                  setForm({
+                    ...form,
+                    message: e.target.value,
+                  })
                 }
                 placeholder="Tell us what property you are looking for..."
                 className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-amber-400"
               />
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -238,6 +239,7 @@ export default function ContactPage() {
               {loading ? "Sending..." : "Send Enquiry"}
             </button>
 
+            {/* Response */}
             {message && (
               <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
                 {message}
@@ -247,12 +249,7 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-8 text-center text-sm text-slate-500 lg:px-8">
-          © {new Date().getFullYear()} PROPERTYHUB. All rights reserved.
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }
