@@ -8,6 +8,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getBrowserApiUrl } from "../lib/api";
 
 type Property = {
   _id: string;
@@ -40,8 +41,7 @@ type ContactEnquiry = {
   createdAt: string;
 };
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = getBrowserApiUrl();;
 
 export default function AdminPage() {
   const [properties, setProperties] = useState<Property[]>([]);

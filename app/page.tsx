@@ -6,6 +6,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import FavoriteButton from "./components/FavoriteButton";
 export const dynamic = "force-dynamic";
+import { getServerApiUrl } from "./lib/api";
 
 
 type Property = {
@@ -43,8 +44,7 @@ const locations = [
 ];
 
 export default async function Home() {
-  const API_URL =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const API_URL = getServerApiUrl();
 
   let properties: Property[] = [];
 

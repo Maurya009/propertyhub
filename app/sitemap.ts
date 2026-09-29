@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
 import { site } from "./lib/site";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { getServerApiUrl } from "./lib/api";
+
+const API_URL = getServerApiUrl();
 
 type PropertyLite = { _id: string; updatedAt?: string };
 

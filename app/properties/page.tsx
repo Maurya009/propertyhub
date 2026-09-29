@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { getBrowserApiUrl } from "../lib/api";
 
 type Property = {
   _id: string;
@@ -21,8 +22,7 @@ type Property = {
   image: string;
 };
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = getBrowserApiUrl();
 
 /* Convert existing price string into Lakh */
 function priceToLakh(price: string): number {

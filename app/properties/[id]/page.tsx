@@ -7,6 +7,7 @@ import EnquiryForm from "./EnquiryForm";
 import PropertyGallery from "./PropertyGallery";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import { getServerApiUrl } from "../../lib/api";
 
 type Property = {
   _id: string;
@@ -30,8 +31,7 @@ type PageProps = {
   }>;
 };
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = getServerApiUrl();
 
 /*
   Replace this number with your real business WhatsApp/call number.

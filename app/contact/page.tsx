@@ -7,8 +7,9 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { site } from "../lib/site";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { getBrowserApiUrl } from "../lib/api";
+
+const API_URL = getBrowserApiUrl();
 
 export default function ContactPage() {
   const [form, setForm] = useState({
