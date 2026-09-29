@@ -35,11 +35,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const data = await response.json();
 
-    const properties = Array.isArray(data?.properties)
-      ? data.properties
-      : Array.isArray(data)
-        ? data
-        : [];
+    const properties = Array.isArray(data?.data)
+  ? data.data
+  : [];
 
     const propertyPages: MetadataRoute.Sitemap = properties
       .filter((property: any) => property?._id)
