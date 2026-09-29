@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
-import { site } from "./lib/site";
+
+const SITE_URL =
+  process.env.SITE_URL || "https://propertyhub-ten.vercel.app";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -8,6 +10,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: "/admin",
     },
-    sitemap: `${site.url}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
