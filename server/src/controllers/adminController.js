@@ -209,9 +209,226 @@ const logoutAdmin = (req, res) => {
     message: "Logout successful",
   });
 };
+const changeAdminPassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new password are required",
+      });
+    }
+
+    const cleanCurrentPassword = String(currentPassword);
+    const cleanNewPassword = String(newPassword);
+
+    // New password validation
+    if (cleanNewPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 8 characters",
+      });
+    }
+
+    // Logged-in admin ID comes from auth middleware
+    if (!req.admin?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const admin = await Admin.findById(req.admin.id);
+
+    if (!admin) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin account not found",
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordCorrect = await bcrypt.compare(
+      cleanCurrentPassword,
+      admin.password
+    );
+
+    if (!isCurrentPasswordCorrect) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Prevent using the same password
+    const isSamePassword = await bcrypt.compare(
+      cleanNewPassword,
+      admin.password
+    );
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be different from current password",
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(cleanNewPassword, 12);
+
+    admin.password = hashedPassword;
+    await admin.save();
+
+    return res.json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error("Admin password change failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to change password",
+    });
+  }
+};
+const changeAdminEmail = async (req, res) => {
+  try {
+    const { currentPassword, newEmail } = req.body;
+
+    if (!currentPassword || !newEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new email are required",
+      });
+    }
+
+    const cleanCurrentPassword = String(currentPassword);
+    const cleanNewEmail = String(newEmail).trim().toLowerCase();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(cleanNewEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid email address",
+      });
+    }
+
+    if (!req.admin?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const admin = await Admin.findById(req.admin.id);
+
+    if (!admin) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin account not found",
+      });
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(
+      cleanCurrentPassword,
+      admin.password
+    );
+
+    if (!isPasswordCorrect) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    if (cleanNewEmail === admin.email) {
+      return res.status(400).json({
+        success: false,
+        message: "New email must be different from current email",
+      });
+    }
+
+    const existingAdmin = await Admin.findOne({
+      email: cleanNewEmail,
+      _id: { $ne: admin._id },
+    });
+
+    if (existingAdmin) {
+      return res.status(409).json({
+        success: false,
+        message: "This email is already in use",
+      });
+    }
+
+    admin.email = cleanNewEmail;
+    await admin.save();
+
+    return res.json({
+      success: true,
+      message: "Admin email changed successfully",
+      data: {
+        email: admin.email,
+      },
+    });
+  } catch (error) {
+    console.error("Admin email change failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to change admin email",
+    });
+  }
+};
+const getCurrentAdmin = async (req, res) => {
+  try {
+    if (!req.admin?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const admin = await Admin.findById(req.admin.id).select(
+      "_id name email role"
+    );
+
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin account not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Get current admin failed:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load admin profile",
+    });
+  }
+};
 
 module.exports = {
   registerAdmin,
   loginAdmin,
   logoutAdmin,
+  changeAdminPassword,
+  changeAdminEmail,
+  getCurrentAdmin,
 };

@@ -9,6 +9,9 @@ const {
   registerAdmin,
   loginAdmin,
   logoutAdmin,
+  changeAdminPassword,
+  changeAdminEmail,
+  getCurrentAdmin,
 } = require("../controllers/adminController");
 
 const protectAdmin = require("../middleware/authMiddleware");
@@ -34,4 +37,25 @@ router.post("/login", loginLimiter, loginAdmin);
 // Admin logout
 router.post("/logout", logoutAdmin);
 
+// Change password - authenticated admin only
+router.post(
+  "/change-password",
+  protectAdmin,
+  changeAdminPassword
+);
+
+// Change admin email - authenticated admin only
+router.post(
+  "/change-email",
+  protectAdmin,
+  changeAdminEmail
+);
+// Get current logged-in admin
+router.get(
+  "/me",
+  protectAdmin,
+  getCurrentAdmin
+);
+
 module.exports = router;
+
