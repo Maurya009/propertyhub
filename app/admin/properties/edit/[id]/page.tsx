@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getBrowserApiUrl } from "../../../../lib/api";
@@ -150,27 +151,30 @@ export default function EditPropertyPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-100">
-        <p className="text-lg font-semibold text-slate-600">
-          Loading property...
-        </p>
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f2e8]">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#d9c7a2] border-t-[#8f6b2f]" />
+          <p className="text-sm font-medium text-[#756d61]">
+            Loading property...
+          </p>
+        </div>
       </main>
     );
   }
 
   if (error && !form.title) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-100 px-6">
-        <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f2e8] px-6">
+        <div className="w-full max-w-md rounded-3xl border border-[#e5d9c5] bg-white p-8 text-center shadow-xl">
           <h1 className="text-xl font-bold text-red-600">
             Property not found
           </h1>
 
-          <p className="mt-2 text-slate-500">{error}</p>
+          <p className="mt-2 text-sm text-[#756d61]">{error}</p>
 
           <button
             onClick={() => router.push("/admin")}
-            className="mt-6 rounded-lg bg-slate-950 px-5 py-3 font-semibold text-white"
+            className="mt-6 rounded-xl bg-[#30271f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#473b30]"
           >
             Back to Dashboard
           </button>
@@ -180,40 +184,102 @@ export default function EditPropertyPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
-          <div>
-            <h1 className="text-2xl font-bold">
-              PROPERTY<span className="text-amber-500">HUB</span>
-            </h1>
+    <main className="min-h-screen bg-[#f7f2e8] text-[#30271f]">
+      {/* Header */}
+      <header className="border-b border-[#e7dcc9] bg-[#fffdf9]">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
+          <div className="flex items-center gap-4">
+            <Image
+              src="/images/ym-realty-logo.png"
+              alt="YM Realty"
+              width={110}
+              height={70}
+              priority
+              className="h-14 w-auto object-contain"
+            />
 
-            <p className="mt-1 text-sm text-slate-500">
-              Edit Property
-            </p>
+            <div className="hidden h-10 w-px bg-[#e2d6c2] sm:block" />
+
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight text-[#30271f]">
+                Edit Property
+              </h1>
+
+              <p className="text-xs text-[#8b8173]">
+                Property Management
+              </p>
+            </div>
           </div>
 
           <button
             onClick={() => router.push("/admin")}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+            className="rounded-xl border border-[#e1d5c1] bg-white px-4 py-2.5 text-sm font-semibold text-[#30271f] shadow-sm transition hover:bg-[#faf6ef]"
           >
             ← Dashboard
           </button>
         </div>
       </header>
 
-      <section className="mx-auto max-w-5xl px-6 py-10">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-          <h2 className="text-2xl font-bold">Edit Property</h2>
+      {/* Main */}
+      <section className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10">
+        {/* Page Heading */}
+        <div className="mb-7">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="h-[3px] w-12 rounded-full bg-[#b58a3a]" />
 
-          <p className="mt-2 text-sm text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-[0.28em] text-[#a47a32]">
+              Property Management
+            </span>
+          </div>
+
+          <h2 className="text-3xl font-bold tracking-tight text-[#30271f] sm:text-4xl">
+            Edit Property
+          </h2>
+
+          <p className="mt-2 text-sm text-[#82786b] sm:text-base">
             Update property information and save your changes.
           </p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-            <div className="grid gap-5 md:grid-cols-2">
+        {/* Form Card */}
+        <div className="overflow-hidden rounded-3xl border border-[#e4d8c5] bg-white shadow-[0_20px_60px_rgba(80,60,30,0.08)]">
+          {/* Card Header */}
+          <div className="border-b border-[#eadfce] bg-[#fbf7ef] px-6 py-5 sm:px-8">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f1e3c8] text-[#a47a32]">
+                <svg
+                  width="23"
+                  height="23"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                </svg>
+              </div>
+
               <div>
-                <label className="mb-2 block text-sm font-semibold">
+                <h3 className="text-lg font-bold text-[#30271f]">
+                  Property Information
+                </h3>
+
+                <p className="mt-1 text-sm text-[#8b8173]">
+                  Update complete details of the property listing.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 sm:p-8">
+            {/* Basic Information */}
+            <div className="grid gap-5 md:grid-cols-2">
+              {/* Title */}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                   Property Title
                 </label>
 
@@ -222,12 +288,14 @@ export default function EditPropertyPage() {
                   value={form.title}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-amber-400"
+                  placeholder="Premium 3 BHK Villa"
+                  className="w-full rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition placeholder:text-[#aaa093] focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
                 />
               </div>
 
+              {/* Location */}
               <div>
-                <label className="mb-2 block text-sm font-semibold">
+                <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                   Location
                 </label>
 
@@ -236,12 +304,14 @@ export default function EditPropertyPage() {
                   value={form.location}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-amber-400"
+                  placeholder="Sector 150, Noida"
+                  className="w-full rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition placeholder:text-[#aaa093] focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
                 />
               </div>
 
+              {/* Price */}
               <div>
-                <label className="mb-2 block text-sm font-semibold">
+                <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                   Price
                 </label>
 
@@ -250,12 +320,14 @@ export default function EditPropertyPage() {
                   value={form.price}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-amber-400"
+                  placeholder="₹1.25 Crore"
+                  className="w-full rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition placeholder:text-[#aaa093] focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
                 />
               </div>
 
+              {/* Property Type */}
               <div>
-                <label className="mb-2 block text-sm font-semibold">
+                <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                   Property Type
                 </label>
 
@@ -263,7 +335,7 @@ export default function EditPropertyPage() {
                   name="type"
                   value={form.type}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-amber-400"
+                  className="w-full rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
                 >
                   <option>Apartment</option>
                   <option>Villa</option>
@@ -273,8 +345,9 @@ export default function EditPropertyPage() {
                 </select>
               </div>
 
+              {/* Status */}
               <div>
-                <label className="mb-2 block text-sm font-semibold">
+                <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                   Status
                 </label>
 
@@ -282,7 +355,7 @@ export default function EditPropertyPage() {
                   name="status"
                   value={form.status}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-amber-400"
+                  className="w-full rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
                 >
                   <option>Ready to Move</option>
                   <option>Under Construction</option>
@@ -291,8 +364,9 @@ export default function EditPropertyPage() {
                 </select>
               </div>
 
+              {/* Area */}
               <div>
-                <label className="mb-2 block text-sm font-semibold">
+                <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                   Area
                 </label>
 
@@ -301,12 +375,14 @@ export default function EditPropertyPage() {
                   value={form.area}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-amber-400"
+                  placeholder="1,850 sq.ft"
+                  className="w-full rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition placeholder:text-[#aaa093] focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
                 />
               </div>
 
+              {/* Bedrooms */}
               <div>
-                <label className="mb-2 block text-sm font-semibold">
+                <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                   Bedrooms
                 </label>
 
@@ -317,12 +393,14 @@ export default function EditPropertyPage() {
                   value={form.beds}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-amber-400"
+                  placeholder="3"
+                  className="w-full rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition placeholder:text-[#aaa093] focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
                 />
               </div>
 
+              {/* Bathrooms */}
               <div>
-                <label className="mb-2 block text-sm font-semibold">
+                <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                   Bathrooms
                 </label>
 
@@ -333,13 +411,15 @@ export default function EditPropertyPage() {
                   value={form.baths}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-amber-400"
+                  placeholder="3"
+                  className="w-full rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition placeholder:text-[#aaa093] focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
+            {/* Description */}
+            <div className="mt-6">
+              <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                 Description
               </label>
 
@@ -349,12 +429,14 @@ export default function EditPropertyPage() {
                 value={form.description}
                 onChange={handleChange}
                 required
-                className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-amber-400"
+                placeholder="Describe the property..."
+                className="w-full resize-none rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition placeholder:text-[#aaa093] focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
               />
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
+            {/* Main Image */}
+            <div className="mt-6">
+              <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                 Main Image URL
               </label>
 
@@ -363,12 +445,14 @@ export default function EditPropertyPage() {
                 value={form.image}
                 onChange={handleChange}
                 required
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-amber-400"
+                placeholder="https://example.com/property-image.jpg"
+                className="w-full rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition placeholder:text-[#aaa093] focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
               />
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
+            {/* Additional Images */}
+            <div className="mt-6">
+              <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                 Additional Image URLs
               </label>
 
@@ -378,16 +462,17 @@ export default function EditPropertyPage() {
                 value={form.images}
                 onChange={handleChange}
                 placeholder="URL 1, URL 2, URL 3"
-                className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-amber-400"
+                className="w-full resize-none rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition placeholder:text-[#aaa093] focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
               />
 
-              <p className="mt-1 text-xs text-slate-500">
-                Separate multiple URLs using commas.
+              <p className="mt-2 text-xs text-[#8b8173]">
+                Separate multiple image URLs using commas.
               </p>
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
+            {/* Amenities */}
+            <div className="mt-6">
+              <label className="mb-2 block text-sm font-semibold text-[#40372e]">
                 Amenities
               </label>
 
@@ -396,31 +481,33 @@ export default function EditPropertyPage() {
                 value={form.amenities}
                 onChange={handleChange}
                 placeholder="Parking, Lift, Security, Garden"
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-amber-400"
+                className="w-full rounded-xl border border-[#dfd3c0] bg-[#fffdfa] px-4 py-3.5 text-sm text-[#30271f] outline-none transition placeholder:text-[#aaa093] focus:border-[#b58a3a] focus:ring-4 focus:ring-[#b58a3a]/10"
               />
 
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-[#8b8173]">
                 Separate amenities using commas.
               </p>
             </div>
 
+            {/* Messages */}
             {message && (
-              <div className="rounded-xl bg-green-50 p-4 text-sm font-semibold text-green-700">
-                ✅ {message}
+              <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-700">
+                ✓ {message}
               </div>
             )}
 
             {error && (
-              <div className="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-600">
-                ❌ {error}
+              <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-600">
+                ✕ {error}
               </div>
             )}
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            {/* Buttons */}
+            <div className="mt-8 flex flex-col gap-3 border-t border-[#eadfce] pt-6 sm:flex-row">
               <button
                 type="submit"
                 disabled={saving}
-                className="flex-1 rounded-xl bg-slate-950 px-6 py-3.5 font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                className="flex-1 rounded-xl bg-[#30271f] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#473b30] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? "Saving Changes..." : "Save Changes"}
               </button>
@@ -428,7 +515,7 @@ export default function EditPropertyPage() {
               <button
                 type="button"
                 onClick={() => router.push("/admin")}
-                className="rounded-xl border border-slate-200 px-6 py-3.5 font-semibold hover:bg-slate-50"
+                className="rounded-xl border border-[#dfd3c0] bg-white px-6 py-3.5 text-sm font-semibold text-[#40372e] transition hover:bg-[#faf6ef]"
               >
                 Cancel
               </button>

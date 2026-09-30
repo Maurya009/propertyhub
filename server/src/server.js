@@ -49,7 +49,7 @@ app.use("/api", apiLimiter);
 const allowedOrigins = [
   "http://localhost:3000",
   "http://192.168.31.50:3000",
-  "https://propertyhub-ten.vercel.app",
+  "https://ymrealty.in",
 ];
 
 app.use(

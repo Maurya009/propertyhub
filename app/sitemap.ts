@@ -2,8 +2,9 @@
 import type { MetadataRoute } from "next";
 import { getServerApiUrl } from "./lib/api";
 
-const SITE_URL =
-  process.env.SITE_URL || "https://propertyhub-ten.vercel.app";
+const SITE_URL = process.env.SITE_URL || "https://ymrealty.in";
+
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
@@ -26,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const response = await fetch(`${getServerApiUrl()}/properties`, {
-      cache: "no-store",
+      next: { revalidate: 3600 },
     });
 
     if (!response.ok) {
@@ -35,9 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const data = await response.json();
 
-    const properties = Array.isArray(data?.data)
-  ? data.data
-  : [];
+    const properties = Array.isArray(data?.data) ? data.data : [];
 
     const propertyPages: MetadataRoute.Sitemap = properties
       .filter((property: any) => property?._id)

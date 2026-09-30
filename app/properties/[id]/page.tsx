@@ -279,7 +279,7 @@ export default async function PropertyDetailsPage({
                   </p>
 
                   <p className="text-sm text-slate-500">
-                    PROPERTYHUB
+                  YM REALTY
                   </p>
                 </div>
               </div>
