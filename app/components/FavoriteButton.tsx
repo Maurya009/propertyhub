@@ -7,7 +7,7 @@ type FavoriteButtonProps = {
   propertyId: string;
 };
 
-const STORAGE_KEY = "ymrealty_favorites";
+const STORAGE_KEY = "propertyhub_favorites";
 
 export default function FavoriteButton({
   propertyId,

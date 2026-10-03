@@ -1,255 +1,100 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @next/next/no-html-link-for-pages */
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useState } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { site } from "../lib/site";
-
 import { getBrowserApiUrl } from "../lib/api";
 
 const API_URL = getBrowserApiUrl();
 
 export default function ContactPage() {
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    message: "",
-  });
-
+  const [form, setForm] = useState({ name: "", phone: "", email: "", message: "" });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
     try {
       setLoading(true);
       setMessage("");
-
       const res = await fetch(`${API_URL}/contact-enquiries`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-
       const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Failed to submit enquiry");
-      }
-
-      setMessage("Enquiry sent successfully!");
-
-      setForm({
-        name: "",
-        phone: "",
-        email: "",
-        message: "",
-      });
+      if (!res.ok || !data.success) throw new Error(data.message || "Failed to submit enquiry");
+      setMessage("Thank you. Your enquiry has been received.");
+      setForm({ name: "", phone: "", email: "", message: "" });
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong."
-      );
+      setMessage(error instanceof Error ? error.message : "Something went wrong.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="story-site contact-page">
       <Header cta={null} />
-
-      {/* Hero */}
-      <section className="bg-slate-900 px-6 py-20 text-white">
-        <div className="mx-auto max-w-7xl">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.25em] text-amber-400">
-            Get in touch
-          </p>
-
-          <h1 className="max-w-3xl text-4xl font-bold tracking-tight md:text-5xl">
-            Let&apos;s find the right property for you.
-          </h1>
-
-          <p className="mt-5 max-w-2xl text-slate-300">
-            Have a question about a property or want help finding your next
-            property? Send us a message and our team will get back to you.
-          </p>
+      <section className="contact-hero-page">
+        <Image src="/story-house/18.webp" alt="The Story House entrance" fill priority sizes="100vw" />
+        <div className="contact-hero-shade" />
+        <div className="contact-hero-copy">
+          <span className="eyebrow eyebrow-gold">The Story House</span>
+          <h1>Let the next chapter begin with a conversation.</h1>
+          <p>Ask about residences, floor plans, amenities, availability or a private site visit.</p>
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section className="mx-auto grid max-w-7xl gap-10 px-6 py-16 lg:grid-cols-[0.8fr_1.2fr] lg:px-8">
-        {/* Contact Info */}
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-amber-500">
-            Contact information
-          </p>
-
-          <h2 className="mt-3 text-3xl font-bold">
-            We&apos;re here to help.
-          </h2>
-
-          <p className="mt-4 leading-7 text-slate-600">
-            Contact us for property details, site visits, availability,
-            pricing information, or any other property-related enquiry.
-          </p>
-
-          <div className="mt-8 space-y-5">
-            {/* Phone */}
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-              <p className="text-sm text-slate-500">Phone</p>
-
-              <a
-                href={`tel:${site.phone}`}
-                className="mt-1 block font-semibold hover:text-amber-500"
-              >
-                {site.phone}
-              </a>
-            </div>
-
-            {/* Email */}
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-              <p className="text-sm text-slate-500">Email</p>
-
-              <a
-                href={`mailto:${site.email}`}
-                className="mt-1 block font-semibold hover:text-amber-500"
-              >
-                {site.email}
-              </a>
-            </div>
-
-            {/* Office */}
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-              <p className="text-sm text-slate-500">Office</p>
-
-              <p className="mt-1 font-semibold">
-                {site.address}
-              </p>
+      <section className="contact-form-section section-pad">
+        <div className="contact-form-grid">
+          <div className="contact-form-copy">
+            <span className="section-label">Enquire / Visit</span>
+            <span className="eyebrow">A more considered way to live</span>
+            <h2>Plan your visit to The Story House.</h2>
+            <p>
+              Share your details and the project team can help you explore the residences,
+              amenities, connectivity and next steps.
+            </p>
+            <div className="contact-form-details">
+              <div><span>Phone</span><a href={`tel:${site.phone}`}>{site.phone}</a></div>
+              <div><span>Developer</span><strong>Arttech Elegant Homes LLP</strong></div>
+              <div><span>Office</span><strong>{site.address}</strong></div>
             </div>
           </div>
-        </div>
 
-        {/* Form */}
-        <div className="rounded-3xl bg-white p-6 shadow-xl ring-1 ring-slate-200 md:p-8">
-          <h2 className="text-2xl font-bold">Send us an enquiry</h2>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Fill in your details and we&apos;ll contact you.
-          </p>
-
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-            {/* Name + Phone */}
-            <div className="grid gap-5 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Full Name
+          <div className="enquiry-card">
+            <h3>Send an enquiry</h3>
+            <p>We will get back to you with the requested project information.</p>
+            <form onSubmit={handleSubmit}>
+              <div className="form-row">
+                <label>
+                  Full name
+                  <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your name" />
                 </label>
-
-                <input
-                  type="text"
-                  required
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      name: e.target.value,
-                    })
-                  }
-                  placeholder="Enter your name"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-amber-400"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">
+                <label>
                   Phone
+                  <input required type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone number" />
                 </label>
-
-                <input
-                  type="tel"
-                  required
-                  value={form.phone}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      phone: e.target.value,
-                    })
-                  }
-                  placeholder="Enter phone number"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-amber-400"
-                />
               </div>
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">
+              <label>
                 Email
+                <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email address" />
               </label>
-
-              <input
-                type="email"
-                required
-                value={form.email}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    email: e.target.value,
-                  })
-                }
-                placeholder="Enter email address"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-amber-400"
-              />
-            </div>
-
-            {/* Message */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">
+              <label>
                 Message
+                <textarea required rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="I’d like to know more about..." />
               </label>
-
-              <textarea
-                required
-                rows={5}
-                value={form.message}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    message: e.target.value,
-                  })
-                }
-                placeholder="Tell us what property you are looking for..."
-                className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none focus:border-amber-400"
-              />
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-slate-900 px-6 py-3.5 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? "Sending..." : "Send Enquiry"}
-            </button>
-
-            {/* Response */}
-            {message && (
-              <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                {message}
-              </p>
-            )}
-          </form>
+              <button className="button button-dark" type="submit" disabled={loading}>
+                {loading ? "Sending..." : "Send enquiry"} <span aria-hidden="true">↗</span>
+              </button>
+              {message && <p className="form-response">{message}</p>}
+            </form>
+          </div>
         </div>
       </section>
-
       <Footer />
     </main>
   );

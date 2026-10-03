@@ -1,190 +1,147 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { navLinks } from "../lib/site";
+import { useEffect, useState } from "react";
+
+const links = [
+  ["The Story", "#story"],
+  ["Residences", "#residences"],
+  ["Amenities", "#amenities"],
+  ["Gallery", "#gallery"],
+];
 
 type HeaderProps = {
   variant?: "solid" | "overlay";
   cta?: { label: string; href: string } | null;
 };
 
-function isActive(pathname: string, href: string) {
-  if (href.includes("#")) return false;
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
 export default function Header({
   variant = "solid",
-  cta = { label: "Get Started", href: "/properties" },
+  cta = { label: "Schedule a Visit", href: "#contact" },
 }: HeaderProps) {
   const pathname = usePathname();
+
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  const overlay = variant === "overlay";
+  const overlay =
+    variant === "overlay" && pathname === "/";
 
-  const wrapper = overlay
-    ? "absolute left-0 right-0 top-0 z-50"
-    : "relative z-50 border-b border-slate-200 bg-white";
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 30);
+    };
 
-  const linkClass = (href: string) => {
-    const active = isActive(pathname, href);
+    handleScroll();
 
-    if (overlay) {
-      return `transition-colors hover:text-amber-400 ${
-        active ? "text-amber-400" : "text-white"
-      }`;
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  const getTarget = (href: string) => {
+    if (!href.startsWith("#")) {
+      return href;
     }
 
-    return `transition-colors hover:text-amber-600 ${
-      active ? "text-amber-600" : "text-slate-900"
-    }`;
+    return pathname === "/"
+      ? href
+      : `/${href}`;
   };
 
-  const ctaClass = overlay
-    ? "rounded-full bg-amber-400 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
-    : "rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800";
+  const handleNavClick = () => {
+    setOpen(false);
+  };
 
   return (
-    <header className={wrapper}>
-      {/* Header bar */}
-      <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6 lg:h-20 lg:px-8">
-        
-        {/* YM Realty Logo */}
+    <header
+      className={[
+        "site-header",
+        overlay
+          ? "site-header-overlay"
+          : "site-header-solid",
+        scrolled
+          ? "site-header-scrolled"
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <div className="site-header-inner">
         <Link
           href="/"
-          className="shrink-0"
+          className="ym-brand"
+          aria-label="YM Realty home"
           onClick={() => setOpen(false)}
-          aria-label="YM Realty Home"
         >
-           <Image
-  src="/images/ym-realty-logo.png"
-  alt="YM Realty"
-  width={200}
-  height={100}
-  priority
-  className="h-16 w-auto object-contain sm:h-[72px]"
-/>
+          <img
+            src="/brand/ym-realty-logo.png"
+            alt="YM Realty"
+            className="ym-brand-logo"
+          />
         </Link>
 
-        {/* Desktop navigation */}
-        <nav className="hidden items-center gap-7 text-sm font-medium lg:flex">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={linkClass(link.href)}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Right side */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Desktop CTA */}
-          {cta && (
-            <Link
-              href={cta.href}
-              className={`hidden lg:inline-flex ${ctaClass}`}
-            >
-              {cta.label}
-            </Link>
-          )}
-
-          {/* Mobile menu button */}
-          <button
-            type="button"
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-            aria-controls="mobile-menu"
-            onClick={() => setOpen((prev) => !prev)}
-            className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition active:scale-95 lg:hidden ${
-              overlay
-                ? "border-white/20 bg-white/10 text-white hover:bg-white/20"
-                : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
-            }`}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              {open ? (
-                <>
-                  <path d="M6 6l12 12" />
-                  <path d="M18 6L6 18" />
-                </>
-              ) : (
-                <>
-                  <path d="M4 7h16" />
-                  <path d="M4 12h16" />
-                  <path d="M4 17h16" />
-                </>
-              )}
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      <div
-        className={`lg:hidden ${
-          open
-            ? "pointer-events-auto opacity-100"
-            : "pointer-events-none opacity-0"
-        }`}
-      >
-        {/* Background overlay */}
-        <button
-          type="button"
-          aria-label="Close menu"
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 bg-slate-950/20"
-        />
-
-        {/* Menu panel */}
         <nav
-          id="mobile-menu"
-          className={`absolute left-0 right-0 top-full z-50 border-t border-slate-200 bg-white shadow-2xl transition-all duration-200 ${
-            open ? "translate-y-0" : "-translate-y-2"
+          className={`site-nav ${
+            open ? "is-open" : ""
           }`}
+          aria-label="Primary navigation"
         >
-          <div className="max-h-[calc(100vh-72px)] overflow-y-auto px-4 py-3 sm:px-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className={`flex min-h-13 items-center border-b border-slate-100 px-2 text-base font-medium transition-colors ${
-                  isActive(pathname, link.href)
-                    ? "text-amber-600"
-                    : "text-slate-900 hover:text-amber-600"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+          {links.map(([label, href]) => (
+            <a
+              key={href}
+              href={getTarget(href)}
+              onClick={handleNavClick}
+            >
+              {label}
+            </a>
+          ))}
 
-            {cta && (
-              <Link
-                href={cta.href}
-                onClick={() => setOpen(false)}
-                className="mt-4 flex min-h-12 items-center justify-center rounded-full bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800"
-              >
-                {cta.label}
-              </Link>
-            )}
-          </div>
+          {cta && (
+            <a
+              className="nav-cta"
+              href={getTarget(cta.href)}
+              onClick={handleNavClick}
+            >
+              <span>{cta.label}</span>
+              <span aria-hidden="true">
+                →
+              </span>
+            </a>
+          )}
         </nav>
+
+        <button
+          className={`mobile-menu-toggle ${
+            open ? "is-open" : ""
+          }`}
+          type="button"
+          aria-expanded={open}
+          aria-label={
+            open
+              ? "Close navigation"
+              : "Open navigation"
+          }
+          onClick={() =>
+            setOpen((value) => !value)
+          }
+        >
+          <span />
+          <span />
+        </button>
       </div>
     </header>
   );

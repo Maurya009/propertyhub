@@ -101,7 +101,64 @@ const getContactEnquiries = async (req, res) => {
   }
 };
 
+
+// Update contact enquiry status
+const updateContactEnquiryStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const allowedStatuses = [
+      "New",
+      "Contacted",
+      "Closed",
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid enquiry status",
+      });
+    }
+
+    const enquiry =
+      await ContactEnquiry.findByIdAndUpdate(
+        req.params.id,
+        { status },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+    if (!enquiry) {
+      return res.status(404).json({
+        success: false,
+        message: "Contact enquiry not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message:
+        "Contact enquiry status updated successfully",
+      data: enquiry,
+    });
+  } catch (error) {
+    console.error(
+      "Update contact enquiry status error:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Failed to update contact enquiry status",
+    });
+  }
+};
+
 module.exports = {
   createContactEnquiry,
   getContactEnquiries,
+  updateContactEnquiryStatus,
 };

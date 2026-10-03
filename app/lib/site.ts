@@ -1,7 +1,3 @@
-/**
- * Single place for all company details.
- */
-
 type SiteConfig = {
   brand: { first: string; second: string };
   name: string;
@@ -15,36 +11,22 @@ type SiteConfig = {
 };
 
 export const site: SiteConfig = {
-  brand: {
-    first: "YM",
-    second: "REALTY",
-  },
-
-  name: "YM Realty",
-
-  tagline: "Real Estate. Redefined.",
-
+  brand: { first: "THE", second: "STORY HOUSE" },
+  name: "The Story House",
+  tagline: "A life worth telling.",
   description:
-    "Discover carefully selected properties in Noida, Greater Noida and Gurgaon. Find a home that matches your lifestyle and future.",
-
-  // Public URL of the website
-  url:
-    process.env.SITE_URL ||
-    "https://ymrealty.in",
-
+    "The Story House brings spacious residences, wellness-oriented amenities, landscaped surroundings and everyday conveniences together in one considered community.",
+  url: process.env.SITE_URL || "http://localhost:3000",
   phone: "+91 9354967107",
-
   whatsapp: "919354967107",
-
-  email: "contact@ymrealty.in",
-
-  address: "Delhi NCR, India",
+  email: "",
+  address: "GF 10 & 11, Ozone Centre, Sector-12, Faridabad - 121007",
 };
 
 export const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Properties", href: "/properties" },
-  { label: "Locations", href: "/#locations" },
-  { label: "About Us", href: "/#about" },
+  { label: "The Story", href: "/#story" },
+  { label: "Residences", href: "/#residences" },
+  { label: "Amenities", href: "/#amenities" },
+  { label: "Gallery", href: "/#gallery" },
   { label: "Contact", href: "/contact" },
 ] as const;

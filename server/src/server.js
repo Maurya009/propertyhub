@@ -16,6 +16,10 @@ const enquiryRoutes = require("./routes/enquiryRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const contactEnquiryRoutes = require("./routes/contactEnquiryRoutes");
+const galleryRoutes = require("./routes/galleryRoutes");
+const amenityRoutes = require("./routes/amenityRoutes");
+const siteContentRoutes = require("./routes/siteContentRoutes");
+const locationRoutes = require("./routes/locationRoutes");
 
 const app = express();
 
@@ -49,7 +53,7 @@ app.use("/api", apiLimiter);
 const allowedOrigins = [
   "http://localhost:3000",
   "http://192.168.31.50:3000",
-  "https://ymrealty.in",
+  "https://propertyhub-ten.vercel.app",
 ];
 
 app.use(
@@ -82,6 +86,10 @@ app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/contact-enquiries", contactEnquiryRoutes);
+app.use("/api/gallery", galleryRoutes);
+app.use("/api/amenities", amenityRoutes);
+app.use("/api/site-content", siteContentRoutes);
+app.use("/api/location", locationRoutes);
 // ------------------------------------
 // 404 Handler
 // ------------------------------------

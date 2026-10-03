@@ -1,410 +1,717 @@
-/* eslint-disable @next/next/no-html-link-for-pages */
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import FavoriteButton from "./components/FavoriteButton";
+
 export const dynamic = "force-dynamic";
+import Footer from "./components/Footer";
+import Header from "./components/Header";
+import ResidenceExplorer from "./components/ResidenceExplorer";
+import VisualGallery from "./components/VisualGallery";
 import { getServerApiUrl } from "./lib/api";
 
-
-type Property = {
-  _id: string;
+type PublicAmenity = {
+  _id?: string;
   title: string;
-  location: string;
-  price: string;
-  type: string;
-  beds: number;
-  baths: number;
-  area: string;
-  status: string;
-  image: string;
+  description?: string;
+  imageUrl?: string;
+  publicId?: string;
+  order?: number;
+  featured?: boolean;
+  active?: boolean;
 };
 
-const locations = [
+const fallbackAmenities: PublicAmenity[] = [
   {
-    name: "Noida",
-    properties: "120+ Properties",
-    image:
-      "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=900&q=80",
+    title: "Fitness Centre",
+    imageUrl: "/story-house/09.webp",
+    order: 1,
+    featured: true,
+    active: true,
   },
   {
-    name: "Greater Noida",
-    properties: "85+ Properties",
-    image:
-      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=900&q=80",
+    title: "Indoor Swimming Pool",
+    imageUrl: "/story-house/19.webp",
+    order: 2,
+    featured: true,
+    active: true,
   },
   {
-    name: "Gurgaon",
-    properties: "95+ Properties",
-    image:
-      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80",
+    title: "Kids' Play Park",
+    imageUrl: "/story-house/05.webp",
+    order: 3,
+    featured: true,
+    active: true,
+  },
+  {
+    title: "Mini Theatre",
+    imageUrl: "/story-house/31.webp",
+    order: 4,
+    featured: true,
+    active: true,
+  },
+  {
+    title: "Yoga & Wellness",
+    order: 5,
+    active: true,
+  },
+  {
+    title: "Walking Track",
+    order: 6,
+    active: true,
+  },
+  {
+    title: "Green Area",
+    order: 7,
+    active: true,
+  },
+  {
+    title: "Housekeeping",
+    order: 8,
+    active: true,
+  },
+  {
+    title: "Medical Clinic",
+    order: 9,
+    active: true,
+  },
+  {
+    title: "24×7 Emergency Services",
+    order: 10,
+    active: true,
+  },
+  {
+    title: "Shopping Complex",
+    order: 11,
+    active: true,
   },
 ];
 
-export default async function Home() {
-  const API_URL = getServerApiUrl();
+const gallery = [
+  ["/story-house/18.webp", "Arrival"],
+  ["/story-house/34.webp", "Skyline"],
+  ["/story-house/22.webp", "Retail"],
+  ["/story-house/25.webp", "Landscape"],
+  ["/story-house/33.webp", "Community"],
+];
 
-  let properties: Property[] = [];
+const connectItems = [
+  ["03 min", "Global City"],
+  ["08 min", "Proposed Metro"],
+  ["25 min", "Sultanpur National Park"],
+  ["25 min", "IGI Airport"],
+];
+
+type PublicLocation = {
+  project: {
+    label: string;
+    address: string;
+    mapQuery: string;
+  };
+  heading: string;
+  description: string;
+  connectivity: {
+    _id?: string;
+    time: string;
+    place: string;
+    order?: number;
+    active?: boolean;
+  }[];
+  active?: boolean;
+};
+
+type SiteContent = {
+  hero: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    primaryCtaLabel: string;
+    secondaryCtaLabel: string;
+  };
+  story: {
+    eyebrow: string;
+    title: string;
+    description: string;
+  };
+  projectStats: {
+    acres: string;
+    acresLabel: string;
+    towers: string;
+    towersLabel: string;
+  };
+  contact: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    ctaLabel: string;
+  };
+};
+
+const fallbackSiteContent: SiteContent = {
+  hero: {
+    eyebrow: "{content.hero.eyebrow}",
+    title: "A home with\nmore room for life.",
+    description:
+      "Thoughtfully planned 2 & 3 BHK residences with generous spaces, landscaped surroundings and everyday amenities.",
+    primaryCtaLabel: "Explore Residences",
+    secondaryCtaLabel: "View Gallery",
+  },
+  story: {
+    eyebrow: "The beginning of a beautiful new chapter",
+    title: "Space that feels\nbeautifully yours.",
+    description:
+      "It is no longer about excess. It is about space that understands you — light that changes the character of a room, nature that becomes part of your everyday, and privacy that lets you retreat.\n\nThe Story House brings together spacious residences, landscaped surroundings, wellness-led amenities and everyday convenience within a thoughtfully planned community.",
+  },
+  projectStats: {
+    acres: "4.525",
+    acresLabel: "Acres",
+    towers: "05",
+    towersLabel: "Residential Towers",
+  },
+  contact: {
+    eyebrow: "Make the next chapter yours",
+    title: "Let’s plan your visit.",
+    description:
+      "Explore residences, amenities and floor plans with our team.",
+    ctaLabel: "Send an enquiry",
+  },
+};
+
+async function getAmenities(): Promise<PublicAmenity[]> {
+  try {
+    const response = await fetch(
+      `${getServerApiUrl()}/amenities`,
+      {
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const result = await response.json();
+
+    if (!result?.success || !Array.isArray(result?.data)) {
+      return [];
+    }
+
+    return result.data
+      .filter((item: PublicAmenity) => item?.active !== false)
+      .sort(
+        (a: PublicAmenity, b: PublicAmenity) =>
+          Number(b.featured) - Number(a.featured) ||
+          Number(a.order ?? 0) - Number(b.order ?? 0)
+      );
+  } catch (error) {
+    console.error(
+      "Amenities API unavailable. Using public-site fallback.",
+      error
+    );
+
+    return [];
+  }
+}
+
+async function getLocation(): Promise<PublicLocation> {
+  const fallback: PublicLocation = {
+    project: {
+      label: "The Story House · Sector 89A, Gurugram",
+      address: "Sector 89A, Gurugram",
+      mapQuery: "The Story House Sector 89A Gurugram",
+    },
+    heading: "Connected to what matters.",
+    description:
+      "Well connected to key business districts, transport links, everyday essentials and important destinations.",
+    connectivity: [
+      { time: "03 min", place: "Global City", order: 1, active: true },
+      { time: "08 min", place: "Proposed Metro", order: 2, active: true },
+      { time: "25 min", place: "Sultanpur National Park", order: 3, active: true },
+      { time: "25 min", place: "IGI Airport", order: 4, active: true },
+    ],
+    active: true,
+  };
 
   try {
-    const res = await fetch(`${API_URL}/properties`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${getServerApiUrl()}/location`,
+      {
+        cache: "no-store",
+      }
+    );
 
-    if (res.ok) {
-      const data = await res.json();
-      properties = (data.data || []).slice(0, 3);
+    if (!response.ok) {
+      return fallback;
     }
+
+    const result = await response.json();
+
+    if (!result?.success || !result?.data) {
+      return fallback;
+    }
+
+    return {
+      ...fallback,
+      ...result.data,
+      project: {
+        ...fallback.project,
+        ...result.data.project,
+      },
+      connectivity: Array.isArray(result.data.connectivity)
+        ? result.data.connectivity
+            .filter(
+              (item: PublicLocation["connectivity"][number]) =>
+                item?.active !== false &&
+                item?.time &&
+                item?.place
+            )
+            .sort(
+              (
+                a: PublicLocation["connectivity"][number],
+                b: PublicLocation["connectivity"][number]
+              ) =>
+                Number(a.order ?? 0) -
+                Number(b.order ?? 0)
+            )
+        : fallback.connectivity,
+    };
   } catch (error) {
-    console.error("Failed to load homepage properties:", error);
+    console.error(
+      "Location API unavailable. Using public-site fallback.",
+      error
+    );
+
+    return fallback;
   }
+}
+
+async function getSiteContent(): Promise<SiteContent> {
+  try {
+    const response = await fetch(
+      `${getServerApiUrl()}/site-content`,
+      {
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      return fallbackSiteContent;
+    }
+
+    const result = await response.json();
+
+    if (!result?.success || !result?.data) {
+      return fallbackSiteContent;
+    }
+
+    return {
+      hero: {
+        ...fallbackSiteContent.hero,
+        ...result.data.hero,
+      },
+      story: {
+        ...fallbackSiteContent.story,
+        ...result.data.story,
+      },
+      projectStats: {
+        ...fallbackSiteContent.projectStats,
+        ...result.data.projectStats,
+      },
+      contact: {
+        ...fallbackSiteContent.contact,
+        ...result.data.contact,
+      },
+    };
+  } catch (error) {
+    console.error(
+      "Site content API unavailable. Using public-site fallback.",
+      error
+    );
+
+    return fallbackSiteContent;
+  }
+}
+
+function splitContentTitle(value: string) {
+  const parts = value.split("\n");
+
+  return {
+    first: parts[0] || "",
+    second: parts.slice(1).join(" ").trim(),
+  };
+}
+
+export default async function Home() {
+  const content = await getSiteContent();
+  const cmsAmenities = await getAmenities();
+  const location = await getLocation();
+
+  const displayAmenities =
+    cmsAmenities.length > 0
+      ? cmsAmenities
+      : fallbackAmenities;
+
+  const amenityCards = displayAmenities.slice(0, 4);
+  const amenityList = displayAmenities.slice(4);
+
+  const heroTitle = splitContentTitle(content.hero.title);
+  const storyTitle = splitContentTitle(content.story.title);
 
   return (
-    <main className="min-h-screen bg-white text-slate-900">
-      <Header variant="overlay" />
+    <main className="story-site compact-home">
+      <Header variant="overlay" cta={{ label: "Schedule a Visit", href: "#contact" }} />
 
-      {/* HERO */}
-      <section className="relative flex min-h-180 items-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=2200&q=85')",
-          }}
-        />
-
-        <div className="absolute inset-0 bg-slate-950/65" />
-
-        <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pt-24 lg:px-8">
-          <div className="max-w-3xl">
-            <p className="mb-5 text-sm font-semibold uppercase tracking-[0.25em] text-amber-400">
-              Find Your Perfect Property
-            </p>
-
-            <h1 className="text-5xl font-bold leading-tight tracking-tight text-white md:text-7xl">
-              Find a place
-              <br />
-              you&apos;ll call <span className="text-amber-400">home.</span>
-            </h1>
-
-            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-200">
-              Discover carefully selected properties in the best locations.
-              Find a home that matches your lifestyle and future.
-            </p>
-          </div>
-
-          {/* SEARCH BOX */}
-          <form
-            action="/properties"
-            method="GET"
-            className="mt-12 max-w-5xl rounded-2xl bg-white p-3 shadow-2xl"
-          >
-            <div className="grid gap-3 md:grid-cols-4">
-              {/* LOCATION */}
-              <div className="rounded-xl border border-slate-200 px-5 py-3">
-                <label
-                  htmlFor="home-location"
-                  className="text-xs font-semibold uppercase tracking-wide text-slate-400"
-                >
-                  Location
-                </label>
-
-                <select
-                  id="home-location"
-                  name="location"
-                  defaultValue="All"
-                  className="mt-1 w-full bg-transparent font-medium text-slate-900 outline-none"
-                >
-                  <option value="All">All Locations</option>
-                  <option value="Noida">Noida</option>
-                  <option value="Greater Noida">Greater Noida</option>
-                  <option value="Gurgaon">Gurgaon</option>
-                </select>
-              </div>
-
-              {/* PROPERTY TYPE */}
-              <div className="rounded-xl border border-slate-200 px-5 py-3">
-                <label
-                  htmlFor="home-type"
-                  className="text-xs font-semibold uppercase tracking-wide text-slate-400"
-                >
-                  Property Type
-                </label>
-
-                <select
-                  id="home-type"
-                  name="type"
-                  defaultValue="All"
-                  className="mt-1 w-full bg-transparent font-medium text-slate-900 outline-none"
-                >
-                  <option value="All">All Types</option>
-                  <option value="Apartment">Apartment</option>
-                  <option value="Villa">Villa</option>
-                </select>
-              </div>
-
-              {/* SEARCH */}
-              <div className="rounded-xl border border-slate-200 px-5 py-3">
-                <label
-                  htmlFor="home-search"
-                  className="text-xs font-semibold uppercase tracking-wide text-slate-400"
-                >
-                  Search
-                </label>
-
-                <input
-                  id="home-search"
-                  name="search"
-                  type="text"
-                  placeholder="Property or location"
-                  className="mt-1 w-full bg-transparent font-medium text-slate-900 outline-none placeholder:text-slate-400"
-                />
-              </div>
-
-              {/* SEARCH BUTTON */}
-              <button
-                type="submit"
-                className="flex items-center justify-center rounded-xl bg-slate-950 px-6 py-4 font-semibold text-white transition hover:bg-slate-800"
-              >
-                Search Property
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      {/* FEATURED PROPERTIES */}
       <section
-        id="properties"
-        className="mx-auto max-w-7xl px-6 py-24 lg:px-8"
-      >
-        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-600">
-              Featured Properties
-            </p>
+  className="story-hero compact-hero"
+  aria-label="The Story House introduction"
+>
+  <img
+    className="story-hero-image"
+    src="/story-house/18.webp"
+    alt="The Story House entrance and arrival"
+  />
 
-            <h2 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
-              Properties worth exploring
-            </h2>
+  <div className="story-hero-shade" />
 
-            <p className="mt-4 max-w-2xl text-slate-500">
-              Explore some of our handpicked properties in premium locations.
-            </p>
-          </div>
+  <div className="story-hero-grid">
+    <div className="story-hero-copy">
+      <span className="hero-kicker">
+        The Story House · Sector 89A, Gurugram
+      </span>
 
-          <Link
-            href="/properties"
-            className="w-fit rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold transition hover:border-slate-950"
-          >
-            View All Properties →
-          </Link>
-        </div>
-
-        {properties.length === 0 ? (
-          <div className="mt-12 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-16 text-center">
-            <h3 className="text-xl font-bold">Properties coming soon</h3>
-
-            <p className="mt-2 text-slate-500">
-              New properties will appear here once they are added.
-            </p>
-
-            <Link
-              href="/properties"
-              className="mt-6 inline-block rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Browse Properties
-            </Link>
-          </div>
-        ) : (
-          <div className="mt-12 grid gap-7 md:grid-cols-2 lg:grid-cols-3">
-            {properties.map((property) => (
-              <article
-                key={property._id}
-                className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div className="relative h-64 overflow-hidden">
-                  <img
-                    src={property.image}
-                    alt={property.title}
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
-
-                  <span className="absolute left-4 top-4 rounded-full bg-white px-3 py-1.5 text-xs font-semibold">
-                    {property.status || "For Sale"}
-                  </span>
-
-                  {/* WORKING FAVOURITE BUTTON */}
-                  <FavoriteButton propertyId={property._id} />
-                </div>
-
-                <div className="p-6">
-                  <p className="text-sm text-slate-500">
-                    📍 {property.location}
-                  </p>
-
-                  <h3 className="mt-2 text-xl font-bold">
-                    {property.title}
-                  </h3>
-
-                  <p className="mt-3 text-sm text-slate-500">
-                    {property.beds} Beds • {property.baths} Baths •{" "}
-                    {property.area}
-                  </p>
-
-                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-5">
-                    <p className="text-xl font-bold">{property.price}</p>
-
-                    <Link
-                      href={`/properties/${property._id}`}
-                      className="text-sm font-semibold text-amber-600 hover:text-amber-700"
-                    >
-                      Details →
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+      <h1>
+        {heroTitle.first}
+        {heroTitle.second && (
+          <>
+            <br />
+            <em>{heroTitle.second}</em>
+          </>
         )}
+      </h1>
+
+      <p>{content.hero.description}</p>
+
+      <div className="hero-actions">
+        <a className="button button-gold" href="#residences">
+          {content.hero.primaryCtaLabel}
+          <span aria-hidden="true">→</span>
+        </a>
+
+        <a className="text-link text-link-light" href="#gallery">
+          {content.hero.secondaryCtaLabel}
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </div>
+
+    <div className="story-hero-side compact-hero-side">
+      <div className="hero-side-image hero-side-image-tall">
+        <img
+          src="/story-house/34.webp"
+          alt="The Story House residential tower"
+        />
+      </div>
+
+      <div className="hero-fact-card">
+        <div>
+          <strong>{content.projectStats.acres}</strong>
+          <span>{content.projectStats.acresLabel}</span>
+        </div>
+
+        <div>
+          <strong>{content.projectStats.towers}</strong>
+          <span>{content.projectStats.towersLabel}</span>
+        </div>
+
+        <div>
+          <strong>2 &amp; 3</strong>
+          <span>BHK Homes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div className="hero-bottom-note">
+    <span>Arttech Elegant Homes LLP</span>
+    <span>Distinctive by Design · Timeless by Choice</span>
+  </div>
+</section>
+
+<section
+  className="intro-section section-pad compact-story"
+  id="story"
+>
+  <div className="section-label">The Story House</div>
+
+  <div className="story-editorial">
+    <div
+      className="story-editorial-media"
+      data-reveal="story-media"
+    >
+      <div className="story-visual-back">
+        <div className="story-visual-back-motion">
+          <img
+            src="/story-house/03.webp"
+            alt="Lifestyle at The Story House"
+          />
+        </div>
+      </div>
+
+      <div className="story-visual-front">
+        <div className="story-visual-front-motion">
+          <img
+            src="/story-house/story-house-lifestyle.jpeg"
+            alt="Elevated lifestyle at The Story House"
+          />
+        </div>
+        <span>Elevated Living</span>
+      </div>
+
+      <div
+        className="story-visual-frame"
+        aria-hidden="true"
+      />
+
+      <div className="story-editorial-tag">
+        A Life Worth Telling
+      </div>
+    </div>
+
+    <div
+      className="story-editorial-copy"
+      data-reveal="story-copy"
+    >
+      <span className="eyebrow">
+        {content.story.eyebrow}
+      </span>
+
+      <h2>
+        {storyTitle.first}
+        {storyTitle.second && (
+          <>
+            <br />
+            <em>{storyTitle.second}</em>
+          </>
+        )}
+      </h2>
+
+      {content.story.description
+        .split(/\n\s*\n/)
+        .map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+
+      <div className="story-editorial-stats">
+        <div>
+          <strong>{content.projectStats.acres}</strong>
+          <span>{content.projectStats.acresLabel}</span>
+        </div>
+
+        <div>
+          <strong>{content.projectStats.towers}</strong>
+          <span>{content.projectStats.towersLabel}</span>
+        </div>
+
+        <div>
+          <strong>2 &amp; 3</strong>
+          <span>BHK Homes</span>
+        </div>
+      </div>
+
+      <a
+        className="text-link"
+        href="#residences"
+      >
+        Discover the residences
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section className="residences-section section-pad compact-section" id="residences">
+        <div className="section-head-row compact-head">
+          <div>
+          <span className="section-label">Residences</span>
+            <span className="eyebrow">Designed around the way you live</span>
+            <h2>Generous homes with room to breathe.</h2>
+          </div>
+          <p>Four configurations across 2 &amp; 3 BHK homes with spacious balconies and balanced planning.</p>
+        </div>
+        <ResidenceExplorer />
       </section>
 
-      {/* LOCATIONS */}
-      <section id="locations" className="bg-slate-50 py-24">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-600">
-              Popular Locations
-            </p>
-
-            <h2 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
-              Explore properties by location
-            </h2>
+      <section className="amenities-section section-pad compact-section" id="amenities">
+        <div className="section-head-row section-head-row-dark compact-head">
+          <div>
+          <span className="section-label section-label-light">Amenities</span>
+            <span className="eyebrow eyebrow-gold">A world of wellbeing within</span>
+            <h2>Everything you need for a richer everyday.</h2>
           </div>
+          <p>Movement, recreation, wellness and community spaces are brought together within the development.</p>
+        </div>
+        <div className="amenities-grid compact-amenities-grid">
+          {amenityCards.map((item) => (
+            <article
+              key={item._id || item.title}
+              className="amenity-card compact-amenity-card"
+            >
+              <img
+                src={
+                  item.imageUrl ||
+                  "/story-house/09.webp"
+                }
+                alt={item.title}
+              />
+              <div className="amenity-overlay" />
+              <div className="amenity-content">
+                <h3>{item.title}</h3>
+              </div>
+            </article>
+          ))}
+        </div>
 
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {locations.map((location) => (
-              <Link
-                key={location.name}
-                href={`/properties?location=${encodeURIComponent(
-                  location.name
-                )}`}
-                className="group relative h-80 overflow-hidden rounded-2xl"
-              >
+        <div className="amenity-list compact-amenity-list">
+          {amenityList.map((item) => (
+            <span key={item._id || item.title}>
+              {item.title}
+            </span>
+          ))}
+        </div>
+      </section>
+
+
+      <section
+  className="gallery-section section-pad compact-section"
+  id="gallery"
+>
+  <div className="gallery-head compact-head">
+    <div>
+    <span className="section-label">Visual Story</span>
+
+      <span className="eyebrow">
+        See the spaces
+      </span>
+
+      <h2>
+        A closer look at
+        <br />
+        <em>the story.</em>
+      </h2>
+    </div>
+
+    <p>
+      Explore architecture, residences, amenities, lifestyle
+      spaces, landscape and the retail promenade.
+    </p>
+  </div>
+
+  <VisualGallery />
+</section>
+
+      {location.active !== false && (
+        <section className="location-section location-section-v2" id="location">
+          <div className="location-shell-v2">
+            <div className="location-editorial-head-v2">
+              <div>
+                <span className="eyebrow">Location</span>
+                <span className="location-kicker-v2">
+                  Well connected, thoughtfully placed
+                </span>
+              </div>
+
+              <div className="location-heading-wrap-v2">
+                <h2>{location.heading}</h2>
+                <p>{location.description}</p>
+              </div>
+            </div>
+
+            <div className="location-feature-v2">
+              <div className="location-feature-image-v2">
                 <img
-                  src={location.image}
-                  alt={location.name}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  src="/story-house/25.webp"
+                  alt={location.project.label}
                 />
+                <div className="location-image-overlay-v2" />
+                <div className="location-image-caption-v2">
+                  <span>{location.project.label}</span>
+                  <strong>{location.project.address}</strong>
+                </div>
+              </div>
 
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="location-feature-copy-v2">
+                <span className="eyebrow eyebrow-gold">
+                  The neighbourhood
+                </span>
 
-                <div className="absolute bottom-6 left-6 text-white">
-                  <h3 className="text-2xl font-bold">{location.name}</h3>
+                <h3>Everything important, within reach.</h3>
 
-                  <p className="mt-1 text-sm text-slate-200">
-                    {location.properties}
+                <p>
+                  A thoughtfully placed address designed around everyday
+                  convenience, seamless movement and easy access to the places
+                  that matter most.
+                </p>
+
+                <a
+                  className="button button-dark location-map-button-v2"
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    location.project.mapQuery ||
+                      location.project.address ||
+                      location.project.label
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open in Maps
+                  <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="location-destinations-v2">
+              {location.connectivity.length > 0 ? (
+                location.connectivity.map((item, index) => (
+                  <div className="location-destination-v2" key={`${item.place}-${index}`}>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <strong>{item.time}</strong>
+                    <p>{item.place}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="location-empty-v2">
+                  <span className="eyebrow">Connectivity</span>
+                  <p>
+                    Key destinations and travel times will appear here as the
+                    location details are configured in the admin panel.
                   </p>
                 </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* WHY US */}
-      <section
-        id="about"
-        className="mx-auto max-w-7xl px-6 py-24 lg:px-8"
-      >
-        <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-600">
-              Why Choose Us
-            </p>
-
-            <h2 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
-              Property buying made simpler.
-            </h2>
-
-            <p className="mt-6 leading-8 text-slate-500">
-              We help buyers discover properties that fit their requirements,
-              budget and lifestyle while providing guidance throughout the
-              buying journey.
-            </p>
-
-            <div className="mt-8 space-y-5">
-              {[
-                [
-                  "01",
-                  "Verified Properties",
-                  "Quality listings with accurate property information.",
-                ],
-                [
-                  "02",
-                  "Expert Assistance",
-                  "Get guidance from experienced property professionals.",
-                ],
-                [
-                  "03",
-                  "Transparent Process",
-                  "Clear communication from enquiry to final decision.",
-                ],
-              ].map(([number, title, description]) => (
-                <div key={number} className="flex gap-5">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 font-bold text-amber-700">
-                    {number}
-                  </div>
-
-                  <div>
-                    <h3 className="font-bold">{title}</h3>
-
-                    <p className="mt-1 text-sm leading-6 text-slate-500">
-                      {description}
-                    </p>
-                  </div>
-                </div>
-              ))}
+              )}
             </div>
           </div>
+        </section>
+      )}
 
-          <div className="relative overflow-hidden rounded-3xl">
-            <img
-              src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=85"
-              alt="Modern property"
-              className="h-140 w-full object-cover"
-            />
-          </div>
+      <section className="contact-section compact-contact" id="contact">
+        <div className="contact-image">
+          <img src="/story-house/15.webp" alt="The Story House arrival" />
+          <div className="contact-image-shade" />
         </div>
-      </section>
-
-      {/* CTA */}
-      <section
-        id="contact"
-        className="mx-auto max-w-7xl px-6 pb-24 lg:px-8"
-      >
-        <div className="overflow-hidden rounded-3xl bg-slate-950 px-8 py-16 text-center md:px-16">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
-            Let&apos;s Find Your Property
-          </p>
-
-          <h2 className="mx-auto mt-4 max-w-3xl text-4xl font-bold tracking-tight text-white md:text-5xl">
-            Looking for your next property?
-          </h2>
-
-          <p className="mx-auto mt-5 max-w-xl text-slate-400">
-            Tell us what you are looking for and our property experts will help
-            you find suitable options.
-          </p>
-
-          <Link
-            href="/contact"
-            className="mt-8 inline-block rounded-full bg-amber-400 px-8 py-4 font-bold text-slate-950 transition hover:bg-amber-300"
-          >
-            Get Property Assistance
-          </Link>
+        <div className="contact-panel">
+          <span className="eyebrow eyebrow-gold">
+            {content.contact.eyebrow}
+          </span>
+          <h2>{content.contact.title}</h2>
+          <p>{content.contact.description}</p>
+          <div className="contact-actions">
+            <Link className="button button-gold" href="/contact">
+              {content.contact.ctaLabel}
+              <span aria-hidden="true">↗</span>
+            </Link>
+            <a className="button button-outline-light" href="tel:+919354967107">Call +91 93549 67107</a>
+          </div>
+          <div className="contact-meta">
+            <span>Arttech Elegant Homes LLP</span>
+            <span>GF 10 &amp; 11, Ozone Centre, Sector-12, Faridabad - 121007</span>
+          </div>
         </div>
       </section>
 

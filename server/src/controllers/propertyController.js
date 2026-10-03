@@ -3,27 +3,50 @@
 const mongoose = require("mongoose");
 const Property = require("../models/Property");
 
-// GET all properties with search and filters
+const cleanString = (value) => {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  return String(value).trim();
+};
+
+const cleanArray = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+};
+
+// GET all properties
 const getProperties = async (req, res) => {
   try {
-    const { location, type, search } = req.query;
+    const { location, type, search, bhk, status } = req.query;
 
     const filter = {};
 
-    // Location filter
     if (location && location !== "All") {
       filter.location = {
-        $regex: String(location),
+        $regex: String(location).trim(),
         $options: "i",
       };
     }
 
-    // Property type filter
     if (type && type !== "All") {
-      filter.type = String(type);
+      filter.type = String(type).trim();
     }
 
-    // Search by title or location
+    if (bhk && bhk !== "All") {
+      filter.bhk = String(bhk).trim();
+    }
+
+    if (status && status !== "All") {
+      filter.status = String(status).trim();
+    }
+
     if (search) {
       const safeSearch = String(search).trim();
 
@@ -41,6 +64,12 @@ const getProperties = async (req, res) => {
               $options: "i",
             },
           },
+          {
+            bhk: {
+              $regex: safeSearch,
+              $options: "i",
+            },
+          },
         ];
       }
     }
@@ -49,7 +78,7 @@ const getProperties = async (req, res) => {
       createdAt: -1,
     });
 
-    res.json({
+    return res.json({
       success: true,
       count: properties.length,
       data: properties,
@@ -57,7 +86,7 @@ const getProperties = async (req, res) => {
   } catch (error) {
     console.error("Get properties error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to fetch properties",
     });
@@ -85,166 +114,219 @@ const getPropertyById = async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: property,
     });
   } catch (error) {
     console.error("Get property error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to fetch property",
     });
   }
 };
 
-// CREATE property
+// CREATE property / residence
 const createProperty = async (req, res) => {
   try {
     const {
       title,
       location,
-      price,
-      type,
-      beds,
-      baths,
-      area,
+      bhk,
+      unitType,
+      carpetArea,
+      balconyArea,
+      superArea,
+      floorPlan,
       status,
       description,
       image,
       images,
       amenities,
+
+      // Legacy compatibility
+      price,
+      type,
+      beds,
+      baths,
+      area,
     } = req.body;
 
-    // Required fields
-    if (
-      !title ||
-      !location ||
-      price === undefined ||
-      !type ||
-      beds === undefined ||
-      baths === undefined ||
-      !area ||
-      !status ||
-      !description
-    ) {
+    const cleanTitle = cleanString(title);
+    const cleanLocation =
+      cleanString(location) || "Sector 89A, Gurugram";
+    const cleanBhk = cleanString(bhk);
+    const cleanUnitType = cleanString(unitType);
+    const cleanCarpetArea = cleanString(carpetArea);
+    const cleanBalconyArea = cleanString(balconyArea);
+    const cleanSuperArea = cleanString(superArea);
+    const cleanFloorPlan = cleanString(floorPlan);
+    const cleanStatus = cleanString(status);
+    const cleanDescription = cleanString(description);
+
+    if (!cleanTitle) {
       return res.status(400).json({
         success: false,
-        message: "Required property fields are missing",
+        message: "Title is required",
       });
     }
 
-    // Clean text values
-    const cleanTitle = String(title).trim();
-    const cleanLocation = String(location).trim();
-    const cleanType = String(type).trim();
-    const cleanArea = String(area).trim();
-    const cleanStatus = String(status).trim();
-    const cleanDescription = String(description).trim();
-
-    // Text validation
     if (cleanTitle.length < 3 || cleanTitle.length > 200) {
       return res.status(400).json({
         success: false,
-        message: "Property title must be between 3 and 200 characters",
+        message: "Title must be between 3 and 200 characters",
       });
     }
 
-    if (cleanLocation.length < 2 || cleanLocation.length > 200) {
+    if (!cleanLocation) {
       return res.status(400).json({
         success: false,
-        message: "Location must be between 2 and 200 characters",
+        message: "Location is required",
       });
     }
 
-    if (cleanDescription.length < 10 || cleanDescription.length > 5000) {
+    if (!["2 BHK", "3 BHK"].includes(cleanBhk)) {
+      return res.status(400).json({
+        success: false,
+        message: "BHK must be either 2 BHK or 3 BHK",
+      });
+    }
+
+    if (!["Type 01", "Type 02"].includes(cleanUnitType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Unit type must be Type 01 or Type 02",
+      });
+    }
+
+    if (!cleanCarpetArea) {
+      return res.status(400).json({
+        success: false,
+        message: "Carpet area is required",
+      });
+    }
+
+    if (!cleanBalconyArea) {
+      return res.status(400).json({
+        success: false,
+        message: "Balcony area is required",
+      });
+    }
+
+    if (!cleanSuperArea) {
+      return res.status(400).json({
+        success: false,
+        message: "Super area is required",
+      });
+    }
+
+    if (!cleanFloorPlan) {
+      return res.status(400).json({
+        success: false,
+        message: "Floor plan image is required",
+      });
+    }
+
+    if (!cleanStatus) {
+      return res.status(400).json({
+        success: false,
+        message: "Status is required",
+      });
+    }
+
+    if (!cleanDescription) {
+      return res.status(400).json({
+        success: false,
+        message: "Description is required",
+      });
+    }
+
+    if (
+      cleanDescription.length < 10 ||
+      cleanDescription.length > 5000
+    ) {
       return res.status(400).json({
         success: false,
         message: "Description must be between 10 and 5000 characters",
       });
     }
 
-    // Numeric validation
-    const numericPrice = Number(price);
-    const numericBeds = Number(beds);
-    const numericBaths = Number(baths);
+    const cleanImages = cleanArray(images);
+    const cleanAmenities = cleanArray(amenities);
 
-    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+    let legacyBeds = 0;
+
+    if (beds !== undefined && beds !== null && beds !== "") {
+      legacyBeds = Number(beds);
+    } else {
+      legacyBeds = cleanBhk === "3 BHK" ? 3 : 2;
+    }
+
+    if (!Number.isInteger(legacyBeds) || legacyBeds < 0) {
       return res.status(400).json({
         success: false,
-        message: "Price must be a valid positive number",
+        message: "Invalid bedroom value",
       });
     }
 
-    if (
-      !Number.isInteger(numericBeds) ||
-      numericBeds < 0 ||
-      numericBeds > 100
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Beds must be a valid number",
-      });
+    let legacyBaths = 0;
+
+    if (baths !== undefined && baths !== null && baths !== "") {
+      legacyBaths = Number(baths);
     }
 
-    if (
-      !Number.isInteger(numericBaths) ||
-      numericBaths < 0 ||
-      numericBaths > 100
-    ) {
+    if (!Number.isInteger(legacyBaths) || legacyBaths < 0) {
       return res.status(400).json({
         success: false,
-        message: "Baths must be a valid number",
-      });
-    }
-
-    // Array validation
-    if (images !== undefined && !Array.isArray(images)) {
-      return res.status(400).json({
-        success: false,
-        message: "Images must be an array",
-      });
-    }
-
-    if (amenities !== undefined && !Array.isArray(amenities)) {
-      return res.status(400).json({
-        success: false,
-        message: "Amenities must be an array",
+        message: "Invalid bathroom value",
       });
     }
 
     const property = await Property.create({
       title: cleanTitle,
       location: cleanLocation,
-      price: numericPrice,
-      type: cleanType,
-      beds: numericBeds,
-      baths: numericBaths,
-      area: cleanArea,
+
+      bhk: cleanBhk,
+      unitType: cleanUnitType,
+      carpetArea: cleanCarpetArea,
+      balconyArea: cleanBalconyArea,
+      superArea: cleanSuperArea,
+      floorPlan: cleanFloorPlan,
+
       status: cleanStatus,
       description: cleanDescription,
-      image,
-      images: Array.isArray(images) ? images : [],
-      amenities: Array.isArray(amenities) ? amenities : [],
+
+      image: cleanString(image),
+      images: cleanImages,
+      amenities: cleanAmenities,
+
+      // Legacy compatibility
+      price: cleanString(price),
+      type: cleanString(type) || "Residence",
+      beds: legacyBeds,
+      baths: legacyBaths,
+      area: cleanString(area) || cleanSuperArea,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: "Property created successfully",
+      message: "Residence created successfully",
       data: property,
     });
   } catch (error) {
     console.error("Create property error:", error);
 
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
-      message: "Failed to create property",
+      message:
+        error?.message || "Failed to create residence",
     });
   }
 };
 
-// UPDATE property
+// UPDATE property / residence
 const updateProperty = async (req, res) => {
   try {
     const { id } = req.params;
@@ -257,23 +339,33 @@ const updateProperty = async (req, res) => {
     }
 
     const allowedFields = [
+      // Story House
       "title",
       "location",
-      "price",
-      "type",
-      "beds",
-      "baths",
-      "area",
+      "bhk",
+      "unitType",
+      "carpetArea",
+      "balconyArea",
+      "superArea",
+      "floorPlan",
+
+      // Common
       "status",
       "description",
       "image",
       "images",
       "amenities",
+
+      // Legacy
+      "price",
+      "type",
+      "beds",
+      "baths",
+      "area",
     ];
 
     const updateData = {};
 
-    // Only allow known property fields
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         updateData[field] = req.body[field];
@@ -287,9 +379,8 @@ const updateProperty = async (req, res) => {
       });
     }
 
-    // Title validation
     if (updateData.title !== undefined) {
-      updateData.title = String(updateData.title).trim();
+      updateData.title = cleanString(updateData.title);
 
       if (
         updateData.title.length < 3 ||
@@ -297,14 +388,14 @@ const updateProperty = async (req, res) => {
       ) {
         return res.status(400).json({
           success: false,
-          message: "Property title must be between 3 and 200 characters",
+          message:
+            "Title must be between 3 and 200 characters",
         });
       }
     }
 
-    // Location validation
     if (updateData.location !== undefined) {
-      updateData.location = String(updateData.location).trim();
+      updateData.location = cleanString(updateData.location);
 
       if (
         updateData.location.length < 2 ||
@@ -312,74 +403,97 @@ const updateProperty = async (req, res) => {
       ) {
         return res.status(400).json({
           success: false,
-          message: "Location must be between 2 and 200 characters",
+          message:
+            "Location must be between 2 and 200 characters",
         });
       }
     }
 
-    // Description validation
-    if (updateData.description !== undefined) {
-      updateData.description = String(updateData.description).trim();
+    if (updateData.bhk !== undefined) {
+      updateData.bhk = cleanString(updateData.bhk);
 
+      if (!["2 BHK", "3 BHK"].includes(updateData.bhk)) {
+        return res.status(400).json({
+          success: false,
+          message: "BHK must be either 2 BHK or 3 BHK",
+        });
+      }
+    }
+
+    if (updateData.unitType !== undefined) {
+      updateData.unitType = cleanString(updateData.unitType);
+
+      if (
+        !["Type 01", "Type 02"].includes(updateData.unitType)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Unit type must be Type 01 or Type 02",
+        });
+      }
+    }
+
+    const stringFields = [
+      "carpetArea",
+      "balconyArea",
+      "superArea",
+      "floorPlan",
+      "status",
+      "description",
+      "image",
+      "price",
+      "type",
+      "area",
+    ];
+
+    for (const field of stringFields) {
+      if (updateData[field] !== undefined) {
+        updateData[field] = cleanString(updateData[field]);
+      }
+    }
+
+    if (updateData.description !== undefined) {
       if (
         updateData.description.length < 10 ||
         updateData.description.length > 5000
       ) {
         return res.status(400).json({
           success: false,
-          message: "Description must be between 10 and 5000 characters",
+          message:
+            "Description must be between 10 and 5000 characters",
         });
       }
     }
 
-    // Price validation
-    if (updateData.price !== undefined) {
-      updateData.price = Number(updateData.price);
-
-      if (
-        !Number.isFinite(updateData.price) ||
-        updateData.price < 0
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Price must be a valid positive number",
-        });
-      }
-    }
-
-    // Beds validation
     if (updateData.beds !== undefined) {
       updateData.beds = Number(updateData.beds);
 
       if (
         !Number.isInteger(updateData.beds) ||
-        updateData.beds < 0 ||
-        updateData.beds > 100
+        updateData.beds < 0
       ) {
         return res.status(400).json({
           success: false,
-          message: "Beds must be a valid number",
+          message: "Invalid bedroom value",
         });
       }
     }
 
-    // Baths validation
     if (updateData.baths !== undefined) {
       updateData.baths = Number(updateData.baths);
 
       if (
         !Number.isInteger(updateData.baths) ||
-        updateData.baths < 0 ||
-        updateData.baths > 100
+        updateData.baths < 0
       ) {
         return res.status(400).json({
           success: false,
-          message: "Baths must be a valid number",
+          message: "Invalid bathroom value",
         });
       }
     }
 
-    // Images validation
     if (updateData.images !== undefined) {
       if (!Array.isArray(updateData.images)) {
         return res.status(400).json({
@@ -387,9 +501,10 @@ const updateProperty = async (req, res) => {
           message: "Images must be an array",
         });
       }
+
+      updateData.images = cleanArray(updateData.images);
     }
 
-    // Amenities validation
     if (updateData.amenities !== undefined) {
       if (!Array.isArray(updateData.amenities)) {
         return res.status(400).json({
@@ -397,6 +512,15 @@ const updateProperty = async (req, res) => {
           message: "Amenities must be an array",
         });
       }
+
+      updateData.amenities = cleanArray(updateData.amenities);
+    }
+
+    if (
+      updateData.area === "" &&
+      updateData.superArea
+    ) {
+      updateData.area = updateData.superArea;
     }
 
     const property = await Property.findByIdAndUpdate(
@@ -415,22 +539,23 @@ const updateProperty = async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
-      message: "Property updated successfully",
+      message: "Residence updated successfully",
       data: property,
     });
   } catch (error) {
     console.error("Update property error:", error);
 
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
-      message: "Failed to update property",
+      message:
+        error?.message || "Failed to update residence",
     });
   }
 };
 
-// DELETE property
+// DELETE property / residence
 const deleteProperty = async (req, res) => {
   try {
     const { id } = req.params;
@@ -451,16 +576,16 @@ const deleteProperty = async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
-      message: "Property deleted successfully",
+      message: "Residence deleted successfully",
     });
   } catch (error) {
     console.error("Delete property error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Failed to delete property",
+      message: "Failed to delete residence",
     });
   }
 };

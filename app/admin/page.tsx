@@ -1,1170 +1,4124 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable react-hooks/immutability */
-/* eslint-disable @next/next/no-location-assign-relative-destination */
-/* eslint-disable @next/next/no-html-link-for-pages */
 /* eslint-disable react-hooks/set-state-in-effect */
-
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { getBrowserApiUrl } from "../lib/api";
 
-type Property = {
+type Residence = {
   _id: string;
   title: string;
-  location: string;
-  price: string;
-  type: string;
-  status: string;
+  bhk?: string;
+  unitType?: string;
+  status?: string;
+  superArea?: string;
 };
+
+type EnquiryStatus = "New" | "Contacted" | "Closed";
 
 type Enquiry = {
   _id: string;
   name: string;
   phone: string;
-  email: string;
-  message: string;
-  propertyId: string;
-  propertyTitle?: string;
-  status?: "New" | "Contacted" | "Closed";
-  createdAt: string;
+  email?: string;
+  status: EnquiryStatus;
+  createdAt?: string;
 };
 
 type ContactEnquiry = {
   _id: string;
   name: string;
   phone: string;
-  email: string;
-  message: string;
-  status: "New" | "Contacted" | "Closed";
-  createdAt: string;
+  email?: string;
+  status?: EnquiryStatus;
+  createdAt?: string;
 };
 
-const API_URL = getBrowserApiUrl();
+type Activity = {
+  id: string;
+  name: string;
+  phone: string;
+  type: "Residence" | "Contact";
+  status: EnquiryStatus;
+  createdAt?: string;
+};
 
-export default function AdminPage() {
-  const [properties, setProperties] = useState<Property[]>([]);
+export default function AdminDashboard() {
+  const [residences, setResidences] = useState<Residence[]>([]);
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [contactEnquiries, setContactEnquiries] = useState<
     ContactEnquiry[]
   >([]);
 
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(
-    null
-  );
+  const [message, setMessage] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // =========================
-  // CHANGE PASSWORD STATES
-  // =========================
-
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
-  const [changingPassword, setChangingPassword] =
-    useState(false);
-
-  // =========================
-  // CHANGE EMAIL STATES
-  // =========================
-
-  const [currentEmail, setCurrentEmail] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [emailPassword, setEmailPassword] = useState("");
-  const [changingEmail, setChangingEmail] = useState(false);
-
-  // =========================
-  // LOAD DASHBOARD
-  // =========================
-
-  const loadDashboard = async () => {
+  async function loadDashboard() {
     try {
+      setLoading(true);
+      setMessage("");
+
+      const api = getBrowserApiUrl();
+
       const [
-        adminRes,
-        propertiesRes,
-        enquiriesRes,
-        contactEnquiriesRes,
+        residencesResponse,
+        enquiriesResponse,
+        contactResponse,
       ] = await Promise.all([
-        fetch(`${API_URL}/admin/me`, {
+        fetch(`${api}/properties`, {
           credentials: "include",
         }),
-  
-        fetch(`${API_URL}/properties`),
-  
-        fetch(`${API_URL}/enquiries`, {
+        fetch(`${api}/enquiries`, {
           credentials: "include",
         }),
-  
-        fetch(`${API_URL}/contact-enquiries`, {
+        fetch(`${api}/contact-enquiries`, {
           credentials: "include",
         }),
       ]);
-  
-      if (
-        adminRes.status === 401 ||
-        enquiriesRes.status === 401 ||
-        contactEnquiriesRes.status === 401
-      ) {
-        window.location.href = "/admin/login";
-        return;
-      }
-  
-      const adminData =
-        await adminRes.json();
-  
-      const propertiesData =
-        await propertiesRes.json();
-  
-      const enquiriesData =
-        await enquiriesRes.json();
-  
-      const contactEnquiriesData =
-        await contactEnquiriesRes.json();
-  
-      if (
-        adminData.success &&
-        adminData.data?.email
-      ) {
-        setCurrentEmail(adminData.data.email);
-      }
-  
-      setProperties(
-        propertiesData.data || []
+
+      const residencesData = await residencesResponse.json();
+      const enquiriesData = await enquiriesResponse.json();
+      const contactData = await contactResponse.json();
+
+      setResidences(
+        Array.isArray(residencesData?.data)
+          ? residencesData.data
+          : []
       );
-  
+
       setEnquiries(
-        enquiriesData.data || []
+        Array.isArray(enquiriesData?.data)
+          ? enquiriesData.data
+          : []
       );
-  
+
       setContactEnquiries(
-        contactEnquiriesData.data || []
+        Array.isArray(contactData?.data)
+          ? contactData.data
+          : []
       );
     } catch (error) {
-      console.error(
-        "Dashboard loading failed:",
-        error
-      );
+      console.error(error);
+      setMessage("Unable to load dashboard data.");
     } finally {
       setLoading(false);
     }
-  };
+  }
+
   useEffect(() => {
     loadDashboard();
   }, []);
 
-  // =========================
-  // DELETE PROPERTY
-  // =========================
+  const stats = useMemo(() => {
+    const twoBhk = residences.filter((item) =>
+      String(item.bhk).toLowerCase().includes("2 bhk")
+    ).length;
 
-  const handleDelete = async (
-    propertyId: string,
-    propertyTitle: string
-  ) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${propertyTitle}"?`
-    );
+    const threeBhk = residences.filter((item) =>
+      String(item.bhk).toLowerCase().includes("3 bhk")
+    ).length;
 
-    if (!confirmed) {
-      return;
-    }
+    const newResidence = enquiries.filter(
+      (item) => item.status === "New"
+    ).length;
 
+    const newContact = contactEnquiries.filter(
+      (item) => !item.status || item.status === "New"
+    ).length;
+
+    return {
+      residences: residences.length,
+      twoBhk,
+      threeBhk,
+      enquiries: newResidence + newContact,
+    };
+  }, [residences, enquiries, contactEnquiries]);
+
+  const activities = useMemo<Activity[]>(() => {
+    const residenceItems: Activity[] = enquiries.map((item) => ({
+      id: item._id,
+      name: item.name,
+      phone: item.phone,
+      type: "Residence",
+      status: item.status,
+      createdAt: item.createdAt,
+    }));
+
+    const contactItems: Activity[] = contactEnquiries.map((item) => ({
+      id: item._id,
+      name: item.name,
+      phone: item.phone,
+      type: "Contact",
+      status: item.status || "New",
+      createdAt: item.createdAt,
+    }));
+
+    return [...residenceItems, ...contactItems]
+      .sort((a, b) => {
+        const aDate = a.createdAt
+          ? new Date(a.createdAt).getTime()
+          : 0;
+
+        const bDate = b.createdAt
+          ? new Date(b.createdAt).getTime()
+          : 0;
+
+        return bDate - aDate;
+      })
+      .slice(0, 6);
+  }, [enquiries, contactEnquiries]);
+
+  async function updateStatus(
+    id: string,
+    status: EnquiryStatus
+  ) {
     try {
-      setDeletingId(propertyId);
+      setUpdatingId(id);
 
-      const res = await fetch(
-        `${API_URL}/properties/${propertyId}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
-
-      const data = await res.json();
-
-      if (res.status === 401) {
-        window.location.href = "/admin/login";
-        return;
-      }
-
-      if (!res.ok || !data.success) {
-        throw new Error(
-          data.message ||
-            "Failed to delete property"
-        );
-      }
-
-      setProperties((prev) =>
-        prev.filter(
-          (property) =>
-            property._id !== propertyId
-        )
-      );
-    } catch (error) {
-      console.error(
-        "Delete property failed:",
-        error
-      );
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to delete property"
-      );
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  // =========================
-  // ENQUIRY STATUS
-  // =========================
-
-  const handleEnquiryStatusChange = async (
-    enquiryId: string,
-    status: "New" | "Contacted" | "Closed"
-  ) => {
-    try {
-      const res = await fetch(
-        `${API_URL}/enquiries/${enquiryId}/status`,
+      const response = await fetch(
+        `${getBrowserApiUrl()}/enquiries/${id}/status`,
         {
           method: "PUT",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include",
-          body: JSON.stringify({
-            status,
-          }),
+          body: JSON.stringify({ status }),
         }
       );
 
-      const data = await res.json();
+      const data = await response.json();
 
-      if (res.status === 401) {
-        window.location.href = "/admin/login";
-        return;
-      }
-
-      if (!res.ok || !data.success) {
+      if (!response.ok || !data.success) {
         throw new Error(
-          data.message ||
-            "Failed to update enquiry status"
+          data.message || "Unable to update enquiry."
         );
       }
 
-      setEnquiries((prev) =>
-        prev.map((enquiry) =>
-          enquiry._id === enquiryId
-            ? {
-                ...enquiry,
-                status,
-              }
-            : enquiry
+      setEnquiries((current) =>
+        current.map((item) =>
+          item._id === id
+            ? { ...item, status }
+            : item
         )
       );
     } catch (error) {
-      console.error(
-        "Status update failed:",
-        error
-      );
+      console.error(error);
 
-      alert(
+      setMessage(
         error instanceof Error
           ? error.message
-          : "Failed to update enquiry status"
-      );
-    }
-  };
-
-  // =========================
-  // CHANGE PASSWORD
-  // =========================
-
-  const handleChangePassword = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
-    e.preventDefault();
-
-    if (
-      !currentPassword ||
-      !newPassword ||
-      !confirmPassword
-    ) {
-      alert("Please fill all password fields.");
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      alert(
-        "New password must be at least 8 characters."
-      );
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      alert(
-        "New password and confirm password do not match."
-      );
-      return;
-    }
-
-    try {
-      setChangingPassword(true);
-
-      const res = await fetch(
-        `${API_URL}/admin/change-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            currentPassword,
-            newPassword,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (res.status === 401) {
-        alert(
-          data.message ||
-            "Your session has expired. Please login again."
-        );
-
-        window.location.href = "/admin/login";
-        return;
-      }
-
-      if (!res.ok || !data.success) {
-        throw new Error(
-          data.message ||
-            "Failed to change password"
-        );
-      }
-
-      alert("Password changed successfully.");
-
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (error) {
-      console.error(
-        "Change password failed:",
-        error
-      );
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to change password"
+          : "Unable to update enquiry."
       );
     } finally {
-      setChangingPassword(false);
+      setUpdatingId(null);
     }
-  };
+  }
 
-  // =========================
-  // CHANGE EMAIL
-  // =========================
-
-  const handleChangeEmail = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
-    e.preventDefault();
-
-    if (!newEmail || !emailPassword) {
-      alert(
-        "Please enter the new email and current password."
-      );
-      return;
-    }
-
+  async function logout() {
     try {
-      setChangingEmail(true);
-
-      const res = await fetch(
-        `${API_URL}/admin/change-email`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            currentPassword: emailPassword,
-            newEmail,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (res.status === 401) {
-        alert(
-          data.message ||
-            "Your session has expired. Please login again."
-        );
-
-        window.location.href = "/admin/login";
-        return;
-      }
-
-      if (!res.ok || !data.success) {
-        throw new Error(
-          data.message ||
-            "Failed to change email"
-        );
-      }
-
-      alert(
-        "Admin email changed successfully."
-      );
-
-      setCurrentEmail(
-        data.data?.email || newEmail
-      );
-
-      setNewEmail("");
-      setEmailPassword("");
-    } catch (error) {
-      console.error(
-        "Change email failed:",
-        error
-      );
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to change email"
-      );
-    } finally {
-      setChangingEmail(false);
-    }
-  };
-
-  // =========================
-  // LOGOUT
-  // =========================
-
-  const handleLogout = async () => {
-    try {
-      await fetch(`${API_URL}/admin/logout`, {
+      await fetch(`${getBrowserApiUrl()}/admin/logout`, {
         method: "POST",
         credentials: "include",
       });
-    } catch (error) {
-      console.error(
-        "Logout request failed:",
-        error
-      );
     } finally {
       window.location.href = "/admin/login";
     }
-  };
+  }
 
-  // =========================
-  // LOADING
-  // =========================
+  function formatDate(value?: string) {
+    if (!value) return "—";
 
-  if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f2e9] px-4">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#e5dac8] border-t-[#b38a3e]" />
+    const date = new Date(value);
 
-          <p className="text-base font-semibold text-[#6d6256]">
-            Loading dashboard...
-          </p>
-        </div>
-      </main>
-    );
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f2e9] text-[#2f271f]">
-      {/* ================= HEADER ================= */}
-
-      <header className="border-b border-[#e5dac8] bg-[#fffdf9]/95 shadow-sm backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <a
-                href="/admin"
-                aria-label="YM Realty Admin Dashboard"
-                className="inline-flex items-center"
-              >
-                <Image
-                  src="/images/ym-realty-logo.png"
-                  alt="YM Realty"
-                  width={190}
-                  height={95}
-                  priority
-                  className="h-16 w-auto object-contain sm:h-[72px]"
-                />
-              </a>
-
-              <p className="mt-1 text-sm text-[#81766a]">
-                Admin Dashboard
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
-              <a
-                href="/admin/properties/new"
-                className="flex min-h-11 items-center justify-center rounded-xl bg-[#2f271f] px-2 text-center text-xs font-semibold text-white transition hover:bg-[#211b16] sm:px-4 sm:text-sm"
-              >
-                + Add Property
-              </a>
-
-              <a
-                href="/"
-                className="flex min-h-11 items-center justify-center rounded-xl border border-[#e5dac8] bg-[#fffdf9] px-2 text-center text-xs font-semibold text-[#3d3329] transition hover:bg-[#f7f2e9] sm:px-4 sm:text-sm"
-              >
-                View Website
-              </a>
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex min-h-11 items-center justify-center rounded-xl bg-[#7b2f2f] px-2 text-center text-xs font-semibold text-white transition hover:bg-[#642525] sm:px-4 sm:text-sm"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* ================= DASHBOARD ================= */}
-
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <div className="mb-7 sm:mb-8">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-[#9a742f]">
-            Property Management
-          </p>
-
-          <h2 className="text-3xl font-bold tracking-tight text-[#2f271f] sm:text-4xl">
-            Dashboard Overview
-          </h2>
-
-          <p className="mt-2 max-w-xl text-sm leading-6 text-[#81766a] sm:text-base">
-            Manage your properties and customer
-            enquiries from one place.
-          </p>
-        </div>
-
-        {/* ================= STATS ================= */}
-
-        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-          <div className="rounded-2xl border border-[#e5dac8] bg-[#fffdf9] p-4 shadow-[0_10px_30px_rgba(80,60,30,0.06)] sm:p-6">
-            <p className="text-xs font-medium text-[#81766a] sm:text-sm">
-              Total Properties
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-[#2f271f] sm:mt-3 sm:text-4xl">
-              {properties.length}
-            </p>
+    <main className="admin-shell">
+      <aside className="sidebar">
+        <div className="sidebar-top">
+          <div className="brand-mark">
+            <img
+              src="/brand/ym-realty-logo.png"
+              alt="YM Realty"
+            />
           </div>
 
-          <div className="rounded-2xl border border-[#e5dac8] bg-[#fffdf9] p-4 shadow-[0_10px_30px_rgba(80,60,30,0.06)] sm:p-6">
-            <p className="text-xs font-medium text-[#81766a] sm:text-sm">
-              Property Enquiries
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-[#2f271f] sm:mt-3 sm:text-4xl">
-              {enquiries.length}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#e5dac8] bg-[#fffdf9] p-4 shadow-[0_10px_30px_rgba(80,60,30,0.06)] sm:p-6">
-            <p className="text-xs font-medium text-[#81766a] sm:text-sm">
-              Contact Enquiries
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-[#2f271f] sm:mt-3 sm:text-4xl">
-              {contactEnquiries.length}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#e5dac8] bg-[#fffdf9] p-4 shadow-[0_10px_30px_rgba(80,60,30,0.06)] sm:p-6">
-            <p className="text-xs font-medium text-[#81766a] sm:text-sm">
-              Available Properties
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-[#2f271f] sm:mt-3 sm:text-4xl">
-              {
-                properties.filter(
-                  (property) =>
-                    property.status !== "Sold"
-                ).length
-              }
-            </p>
+          <div className="sidebar-identity">
+            <strong>Admin Portal</strong>
           </div>
         </div>
 
-        {/* ================= PROPERTIES ================= */}
+        <nav className="sidebar-nav">
+          <span className="nav-label">Overview</span>
 
-        <div className="mt-8 overflow-hidden rounded-2xl border border-[#e5dac8] bg-[#fffdf9] shadow-[0_14px_40px_rgba(80,60,30,0.07)] sm:mt-10">
-          <div className="flex flex-col gap-4 border-b border-[#e5dac8] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-            <div>
-              <h3 className="text-xl font-bold text-[#2f271f]">
-                Properties
-              </h3>
+          <a
+            href="#top"
+            className="nav-item active"
+          >
+            <span className="nav-icon">
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <rect x="4" y="4" width="6" height="6" rx="1" />
+                <rect x="14" y="4" width="6" height="6" rx="1" />
+                <rect x="4" y="14" width="6" height="6" rx="1" />
+                <rect x="14" y="14" width="6" height="6" rx="1" />
+              </svg>
+            </span>
 
-              <p className="mt-1 text-sm text-[#81766a]">
-                Recently added properties
-              </p>
-            </div>
+            <span>Dashboard</span>
+          </a>
 
-            <a
-              href="/admin/properties/new"
-              className="flex min-h-11 w-full items-center justify-center rounded-xl bg-[#b38a3e] px-4 text-sm font-semibold text-white transition hover:bg-[#96702f] sm:w-fit"
-            >
-              + Add Property
-            </a>
-          </div>
+          <span className="nav-label">Website</span>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[850px] text-left">
-              <thead className="bg-[#fbf7ef]">
-                <tr>
-                  <th className="px-5 py-4 text-sm font-semibold text-[#4b4035]">
-                    Property
-                  </th>
+          <Link
+            href="/admin/properties"
+            className="nav-item"
+          >
+            <span className="nav-icon">
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M5 20V8.5L12 4l7 4.5V20" />
+                <path d="M9 20v-6h6v6" />
+              </svg>
+            </span>
 
-                  <th className="px-5 py-4 text-sm font-semibold text-[#4b4035]">
-                    Location
-                  </th>
+            <span>Residences</span>
+          </Link>
 
-                  <th className="px-5 py-4 text-sm font-semibold text-[#4b4035]">
-                    Price
-                  </th>
+          <Link
+            href="/admin/gallery"
+            className="nav-item"
+          >
+            <span className="nav-icon">
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+                <circle cx="9" cy="9" r="1.5" />
+                <path d="m6 17 4.5-4.5L14 16l2-2 2 3" />
+              </svg>
+            </span>
 
-                  <th className="px-5 py-4 text-sm font-semibold text-[#4b4035]">
-                    Type
-                  </th>
+            <span>Gallery</span>
+          </Link>
 
-                  <th className="px-5 py-4 text-sm font-semibold text-[#4b4035]">
-                    Status
-                  </th>
+          <Link
+            href="/admin/content"
+            className="nav-item"
+          >
+            <span className="nav-icon">
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M5 5h14v14H5z" />
+                <path d="M8 9h8M8 13h6" />
+              </svg>
+            </span>
 
-                  <th className="px-5 py-4 text-sm font-semibold text-[#4b4035]">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
+            <span>Project Content</span>
+          </Link>
 
-              <tbody>
-                {properties.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-6 py-10 text-center text-sm text-[#81766a]"
-                    >
-                      No properties found.
-                    </td>
-                  </tr>
-                ) : (
-                  properties.map((property) => (
-                    <tr
-                      key={property._id}
-                      className="border-t border-[#eee6d9] transition hover:bg-[#f7f2e9]"
-                    >
-                      <td className="max-w-xs px-5 py-4 font-semibold text-[#2f271f]">
-                        {property.title}
-                      </td>
+          <Link
+            href="/admin/amenities"
+            className="nav-item"
+          >
+            <span className="nav-icon">
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M6 19V9h12v10" />
+                <path d="M8 9V6h8v3M9 14h6M9 17h6" />
+              </svg>
+            </span>
 
-                      <td className="px-5 py-4 text-sm text-[#6d6256]">
-                        {property.location}
-                      </td>
+            <span>Amenities</span>
+          </Link>
 
-                      <td className="px-5 py-4 text-sm font-medium text-[#2f271f]">
-                        {property.price}
-                      </td>
+          <Link
+            href="/admin/location"
+            className="nav-item"
+          >
+            <span className="nav-icon">
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M12 21s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z" />
+                <circle cx="12" cy="11" r="2" />
+              </svg>
+            </span>
 
-                      <td className="px-5 py-4 text-sm text-[#6d6256]">
-                        {property.type}
-                      </td>
+            <span>Location</span>
+          </Link>
 
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                            property.status ===
-                            "Sold"
-                              ? "bg-red-100 text-red-700"
-                              : property.status ===
-                                  "Under Construction"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-green-100 text-green-700"
-                          }`}
-                        >
-                          {property.status}
-                        </span>
-                      </td>
+          <span className="nav-label">Leads</span>
 
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={`/admin/properties/edit/${property._id}`}
-                            className="rounded-lg border border-[#d7c39b] bg-[#fbf5e9] px-3 py-2 text-xs font-semibold text-[#7b5d29] transition hover:bg-[#f1e5cf]"
-                          >
-                            ✏️ Edit
-                          </a>
+          <Link
+            href="/admin/enquiries"
+            className="nav-item"
+          >
+            <span className="nav-icon">
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M4 6h16v12H4z" />
+                <path d="m4 7 8 6 8-6" />
+              </svg>
+            </span>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleDelete(
-                                property._id,
-                                property.title
-                              )
-                            }
-                            disabled={
-                              deletingId ===
-                              property._id
-                            }
-                            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {deletingId ===
-                            property._id
-                              ? "Deleting..."
-                              : "🗑️ Delete"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+            <span>Enquiries</span>
 
-          <div className="border-t border-[#eee6d9] bg-[#f7f2e9] px-5 py-3 text-xs text-[#81766a] sm:hidden">
-            Swipe horizontally to view all property
-            details.
-          </div>
-        </div>
-
-        {/* ================= CUSTOMER ENQUIRIES ================= */}
-
-        <div className="mt-8 overflow-hidden rounded-2xl border border-[#e5dac8] bg-[#fffdf9] shadow-[0_14px_40px_rgba(80,60,30,0.07)] sm:mt-10">
-          <div className="border-b border-[#e5dac8] p-5 sm:p-6">
-            <h3 className="text-xl font-bold text-[#2f271f]">
-              Customer Enquiries
-            </h3>
-
-            <p className="mt-1 text-sm text-[#81766a]">
-              Recent enquiries from potential buyers
-            </p>
-          </div>
-
-          <div className="divide-y divide-slate-100">
-            {enquiries.length === 0 ? (
-              <p className="p-5 text-sm text-[#81766a] sm:p-6">
-                No enquiries found.
-              </p>
-            ) : (
-              enquiries.map((enquiry) => (
-                <div
-                  key={enquiry._id}
-                  className="p-5 sm:p-6"
-                >
-                  <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                    <div className="min-w-0">
-                      <h4 className="font-semibold text-[#2f271f]">
-                        {enquiry.name}
-                      </h4>
-
-                      <p className="mt-1 break-words text-sm text-[#81766a]">
-                        {enquiry.email} ·{" "}
-                        {enquiry.phone}
-                      </p>
-
-                      {enquiry.propertyTitle && (
-                        <p className="mt-2 text-sm font-medium text-[#4b4035]">
-                          Property:{" "}
-                          {enquiry.propertyTitle}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
-                      <p className="text-sm text-[#a1978b]">
-                        {new Date(
-                          enquiry.createdAt
-                        ).toLocaleDateString()}
-                      </p>
-
-                      <select
-                        value={
-                          enquiry.status || "New"
-                        }
-                        onChange={(e) =>
-                          handleEnquiryStatusChange(
-                            enquiry._id,
-                            e.target.value as
-                              | "New"
-                              | "Contacted"
-                              | "Closed"
-                          )
-                        }
-                        className="min-h-11 w-full rounded-xl border border-[#e5dac8] bg-[#fffdf9] px-3 py-2 text-sm font-semibold outline-none transition focus:border-[#b38a3e] focus:ring-4 focus:ring-[#b38a3e]/10 md:w-auto"
-                      >
-                        <option value="New">
-                          New
-                        </option>
-
-                        <option value="Contacted">
-                          Contacted
-                        </option>
-
-                        <option value="Closed">
-                          Closed
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <p className="mt-4 rounded-xl bg-[#f7f2e9] p-4 text-sm leading-6 text-[#6d6256]">
-                    {enquiry.message ||
-                      "No message provided."}
-                  </p>
-                </div>
-              ))
+            {stats.enquiries > 0 && (
+              <strong className="nav-count">
+                {stats.enquiries}
+              </strong>
             )}
-          </div>
+          </Link>
+        </nav>
+
+        <div className="sidebar-bottom">
+          <button
+            type="button"
+            className="sidebar-logout"
+            onClick={logout}
+          >
+            <span>Logout</span>
+            <span className="sidebar-arrow">↗</span>
+          </button>
         </div>
+      </aside>
 
-        {/* ================= CONTACT ENQUIRIES ================= */}
+      <section className="main-area" id="top">
+        <header className="main-header">
+          <div className="header-copy">
+            <div className="breadcrumb">
+              <span>ADMIN</span>
+            </div>
 
-        <div className="mt-8 overflow-hidden rounded-2xl border border-[#e5dac8] bg-[#fffdf9] shadow-[0_14px_40px_rgba(80,60,30,0.07)] sm:mt-10">
-          <div className="border-b border-[#e5dac8] p-5 sm:p-6">
-            <h3 className="text-xl font-bold text-[#2f271f]">
-              Contact Enquiries
-            </h3>
+            <h1>Dashboard</h1>
 
-            <p className="mt-1 text-sm text-[#81766a]">
-              Enquiries submitted through the Contact
-              page
+            <p>
+              A central workspace for your website,
+              residences and enquiries.
             </p>
           </div>
 
-          <div className="divide-y divide-slate-100">
-            {contactEnquiries.length === 0 ? (
-              <div className="p-5 sm:p-6">
-                <p className="text-sm text-[#81766a]">
-                  No contact enquiries found.
+          <div className="header-tools">
+            <div className="session-status">
+              <span className="status-dot" />
+              <span>Session active</span>
+            </div>
+
+            <Link
+              href="/"
+              className="view-site-button"
+            >
+              View website
+              <span>↗</span>
+            </Link>
+          </div>
+        </header>
+
+        <section className="stats-grid">
+          <div className="stat-card primary-stat">
+            <div className="stat-card-top">
+              <span className="stat-label">
+                Total Residences
+              </span>
+
+              <span className="stat-symbol">01</span>
+            </div>
+
+            <div className="stat-card-bottom">
+              <strong>
+                {loading ? "—" : stats.residences}
+              </strong>
+
+              <small>Current inventory</small>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-card-top">
+              <span className="stat-label">
+                2 BHK
+              </span>
+
+              <span className="stat-symbol">02</span>
+            </div>
+
+            <div className="stat-card-bottom">
+              <strong>
+                {loading ? "—" : stats.twoBhk}
+              </strong>
+
+              <small>Residential units</small>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-card-top">
+              <span className="stat-label">
+                3 BHK
+              </span>
+
+              <span className="stat-symbol">03</span>
+            </div>
+
+            <div className="stat-card-bottom">
+              <strong>
+                {loading ? "—" : stats.threeBhk}
+              </strong>
+
+              <small>Residential units</small>
+            </div>
+          </div>
+
+          <div className="stat-card enquiry-stat">
+            <div className="stat-card-top">
+              <span className="stat-label">
+                New Enquiries
+              </span>
+
+              <span className="stat-symbol">04</span>
+            </div>
+
+            <div className="stat-card-bottom">
+              <strong>
+                {loading ? "—" : stats.enquiries}
+              </strong>
+
+              <small>Requires attention</small>
+            </div>
+          </div>
+        </section>
+
+        <section className="section-block">
+          <div className="section-heading">
+            <div>
+              <span className="section-kicker">
+                WEBSITE MANAGEMENT
+              </span>
+
+              <h2>Manage your site</h2>
+            </div>
+
+            <p>
+              Content, media and project information
+            </p>
+          </div>
+
+          <div className="module-grid">
+            <Link
+              href="/admin/properties"
+              className="module-card featured-module"
+            >
+              <div className="module-top">
+                <span>01</span>
+                <span className="module-icon">↗</span>
+              </div>
+
+              <div className="module-content">
+                <span className="module-mini-label">
+                  INVENTORY
+                </span>
+
+                <h3>Residences</h3>
+
+                <p>
+                  Add and manage 2 BHK and 3 BHK
+                  residences, areas and floor plans.
                 </p>
               </div>
+
+              <div className="module-footer">
+                <span>Manage residences</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/gallery"
+              className="module-card"
+            >
+              <div className="module-top">
+                <span>02</span>
+                <span className="module-icon">↗</span>
+              </div>
+
+              <div className="module-content">
+                <span className="module-mini-label">
+                  MEDIA
+                </span>
+
+                <h3>Gallery</h3>
+
+                <p>
+                  Manage website visuals, categories,
+                  featured images and ordering.
+                </p>
+              </div>
+
+              <div className="module-footer">
+                <span>Manage gallery</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/content"
+              className="module-card"
+            >
+              <div className="module-top">
+                <span>03</span>
+                <span className="module-icon">↗</span>
+              </div>
+
+              <div className="module-content">
+                <span className="module-mini-label">
+                  CONTENT
+                </span>
+
+                <h3>Project Content</h3>
+
+                <p>
+                  Manage website headlines, text,
+                  statistics and page content.
+                </p>
+              </div>
+
+              <div className="module-footer">
+                <span>Manage content</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/amenities"
+              className="module-card"
+            >
+              <div className="module-top">
+                <span>04</span>
+                <span className="module-icon">↗</span>
+              </div>
+
+              <div className="module-content">
+                <span className="module-mini-label">
+                  LIFESTYLE
+                </span>
+
+                <h3>Amenities</h3>
+
+                <p>
+                  Add, remove and organise the
+                  amenities shown on the website.
+                </p>
+              </div>
+
+              <div className="module-footer">
+                <span>Manage amenities</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/location"
+              className="module-card"
+            >
+              <div className="module-top">
+                <span>05</span>
+                <span className="module-icon">↗</span>
+              </div>
+
+              <div className="module-content">
+                <span className="module-mini-label">
+                  CONNECTIVITY
+                </span>
+
+                <h3>Location</h3>
+
+                <p>
+                  Manage connectivity, destinations
+                  and location information.
+                </p>
+              </div>
+
+              <div className="module-footer">
+                <span>Manage location</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/admin/enquiries"
+              className="module-card dark-module"
+            >
+              <div className="module-top">
+                <span>06</span>
+                <span className="module-icon">↗</span>
+              </div>
+
+              <div className="module-content">
+                <span className="module-mini-label">
+                  LEADS
+                </span>
+
+                <h3>Enquiries</h3>
+
+                <p>
+                  Review website enquiries and update
+                  lead status.
+                </p>
+              </div>
+
+              <div className="module-footer">
+                <span>Manage enquiries</span>
+                <span>→</span>
+              </div>
+            </Link>
+          </div>
+        </section>
+
+        <section
+          className="dashboard-grid"
+          id="enquiries"
+        >
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <span className="section-kicker">
+                  LEADS
+                </span>
+
+                <h2>Recent enquiries</h2>
+
+                <p>
+                  The latest enquiries from your website.
+                </p>
+              </div>
+
+              <span className="panel-count">
+                {activities.length}
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="empty">
+                <div className="empty-loader" />
+                <span>Loading enquiries…</span>
+              </div>
+            ) : activities.length === 0 ? (
+              <div className="empty">
+                <strong>No enquiries yet.</strong>
+
+                <span>
+                  Website enquiries will appear here.
+                </span>
+              </div>
             ) : (
-              contactEnquiries.map((contact) => (
-                <div
-                  key={contact._id}
-                  className="p-5 sm:p-6"
-                >
-                  <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="min-w-0">
-                      <h4 className="text-lg font-semibold text-[#2f271f]">
-                        {contact.name}
-                      </h4>
+              <div className="list">
+                {activities.map((item) => (
+                  <div
+                    className="list-row enquiry-row"
+                    key={`${item.type}-${item.id}`}
+                  >
+                    <div className="list-main">
+                      <strong>{item.name}</strong>
 
-                      <div className="mt-2 flex flex-col gap-2 text-sm text-[#81766a]">
-                        <a
-                          href={`mailto:${contact.email}`}
-                          className="w-fit break-all transition hover:text-[#96702f]"
-                        >
-                          📧 {contact.email}
-                        </a>
-
-                        <a
-                          href={`tel:${contact.phone}`}
-                          className="w-fit transition hover:text-[#96702f]"
-                        >
-                          📞 {contact.phone}
-                        </a>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-start gap-2 lg:items-end">
-                      <p className="text-sm text-[#a1978b]">
-                        {new Date(
-                          contact.createdAt
-                        ).toLocaleDateString()}
-                      </p>
-
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          contact.status ===
-                          "New"
-                            ? "bg-blue-100 text-[#6d5736]"
-                            : contact.status ===
-                                "Contacted"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-green-100 text-green-700"
-                        }`}
-                      >
-                        {contact.status}
+                      <span>
+                        {item.type} · {item.phone}
                       </span>
                     </div>
-                  </div>
 
-                  <div className="mt-5 rounded-xl bg-[#f7f2e9] p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#a1978b]">
-                      Message
-                    </p>
+                    <div className="enquiry-meta">
+                      <div className="enquiry-top-line">
+                        <span
+                          className={`status ${item.status.toLowerCase()}`}
+                        >
+                          {item.status}
+                        </span>
 
-                    <p className="mt-2 text-sm leading-6 text-[#4b4035]">
-                      {contact.message ||
-                        "No message provided."}
-                    </p>
+                        <small>
+                          {formatDate(item.createdAt)}
+                        </small>
+                      </div>
+
+                      {item.type === "Residence" && (
+                        <select
+                          value={item.status}
+                          disabled={
+                            updatingId === item.id
+                          }
+                          onChange={(event) =>
+                            void updateStatus(
+                              item.id,
+                              event.target
+                                .value as EnquiryStatus
+                            )
+                          }
+                        >
+                          <option value="New">
+                            New
+                          </option>
+
+                          <option value="Contacted">
+                            Contacted
+                          </option>
+
+                          <option value="Closed">
+                            Closed
+                          </option>
+                        </select>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
-        </div>
+        </section>
 
-        {/* ================= ACCOUNT SECURITY ================= */}
-
-        <div className="mt-8 overflow-hidden rounded-2xl border border-[#e5dac8] bg-[#fffdf9] shadow-[0_14px_40px_rgba(80,60,30,0.07)] sm:mt-10">
-          <div className="border-b border-[#e5dac8] bg-[#f7f2e9] p-5 sm:p-6">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-lg text-white">
-                🔐
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-[#2f271f]">
-                  Account Security
-                </h3>
-
-                <p className="mt-1 text-sm leading-6 text-[#81766a]">
-                  Manage your admin email address and
-                  password securely.
-                </p>
-              </div>
-            </div>
+        {message && (
+          <div className="message">
+            <span>{message}</span>
+            <button
+              type="button"
+              onClick={() => setMessage("")}
+              aria-label="Dismiss message"
+            >
+              ×
+            </button>
           </div>
-
-          <div className="grid gap-0 lg:grid-cols-2">
-            {/* ================= CHANGE EMAIL ================= */}
-
-            <div className="border-b border-[#e5dac8] p-5 sm:p-6 lg:border-b-0 lg:border-r">
-              <div className="mb-5">
-                <h4 className="text-lg font-bold text-[#2f271f]">
-                  Change Admin Email
-                </h4>
-
-                <p className="mt-1 text-sm leading-6 text-[#81766a]">
-                  Update the email address used for
-                  your admin account.
-                </p>
-              </div>
-
-              <form
-                onSubmit={handleChangeEmail}
-                className="space-y-5"
-              >
-                <div>
-                  <label
-                    htmlFor="currentEmail"
-                    className="mb-2 block text-sm font-semibold text-[#4b4035]"
-                  >
-                    Current Email
-                  </label>
-
-                  <input
-                    id="currentEmail"
-                    type="email"
-                    value={currentEmail}
-                    onChange={(e) =>
-                      setCurrentEmail(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Current admin email"
-                    autoComplete="email"
-                    className="min-h-11 w-full rounded-xl border border-[#e5dac8] bg-[#f7f2e9] px-4 py-3 text-sm text-[#2f271f] outline-none transition placeholder:text-[#a1978b] focus:border-[#b38a3e] focus:bg-[#fffdf9] focus:ring-4 focus:ring-[#b38a3e]/10"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="newEmail"
-                    className="mb-2 block text-sm font-semibold text-[#4b4035]"
-                  >
-                    New Email
-                  </label>
-
-                  <input
-                    id="newEmail"
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) =>
-                      setNewEmail(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Enter new email address"
-                    autoComplete="email"
-                    className="min-h-11 w-full rounded-xl border border-[#e5dac8] bg-[#fffdf9] px-4 py-3 text-sm text-[#2f271f] outline-none transition placeholder:text-[#a1978b] focus:border-[#b38a3e] focus:ring-4 focus:ring-[#b38a3e]/10"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="emailPassword"
-                    className="mb-2 block text-sm font-semibold text-[#4b4035]"
-                  >
-                    Current Password
-                  </label>
-
-                  <input
-                    id="emailPassword"
-                    type="password"
-                    value={emailPassword}
-                    onChange={(e) =>
-                      setEmailPassword(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Enter current password"
-                    autoComplete="current-password"
-                    className="min-h-11 w-full rounded-xl border border-[#e5dac8] bg-[#fffdf9] px-4 py-3 text-sm text-[#2f271f] outline-none transition placeholder:text-[#a1978b] focus:border-[#b38a3e] focus:ring-4 focus:ring-[#b38a3e]/10"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={changingEmail}
-                  className="min-h-11 w-full rounded-xl bg-[#2f271f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#211b16] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {changingEmail
-                    ? "Updating Email..."
-                    : "Update Email"}
-                </button>
-              </form>
-            </div>
-
-            {/* ================= CHANGE PASSWORD ================= */}
-
-            <div className="p-5 sm:p-6">
-              <div className="mb-5">
-                <h4 className="text-lg font-bold text-[#2f271f]">
-                  Change Password
-                </h4>
-
-                <p className="mt-1 text-sm leading-6 text-[#81766a]">
-                  Change your admin password to keep
-                  your account secure.
-                </p>
-              </div>
-
-              <form
-                onSubmit={handleChangePassword}
-                className="space-y-5"
-              >
-                <div>
-                  <label
-                    htmlFor="currentPassword"
-                    className="mb-2 block text-sm font-semibold text-[#4b4035]"
-                  >
-                    Current Password
-                  </label>
-
-                  <input
-                    id="currentPassword"
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) =>
-                      setCurrentPassword(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Enter current password"
-                    autoComplete="current-password"
-                    className="min-h-11 w-full rounded-xl border border-[#e5dac8] bg-[#fffdf9] px-4 py-3 text-sm text-[#2f271f] outline-none transition placeholder:text-[#a1978b] focus:border-[#b38a3e] focus:ring-4 focus:ring-[#b38a3e]/10"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="newPassword"
-                    className="mb-2 block text-sm font-semibold text-[#4b4035]"
-                  >
-                    New Password
-                  </label>
-
-                  <input
-                    id="newPassword"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) =>
-                      setNewPassword(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Enter new password"
-                    autoComplete="new-password"
-                    className="min-h-11 w-full rounded-xl border border-[#e5dac8] bg-[#fffdf9] px-4 py-3 text-sm text-[#2f271f] outline-none transition placeholder:text-[#a1978b] focus:border-[#b38a3e] focus:ring-4 focus:ring-[#b38a3e]/10"
-                  />
-
-                  <p className="mt-2 text-xs text-[#81766a]">
-                    Minimum 8 characters.
-                  </p>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="mb-2 block text-sm font-semibold text-[#4b4035]"
-                  >
-                    Confirm New Password
-                  </label>
-
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) =>
-                      setConfirmPassword(
-                        e.target.value
-                      )
-                    }
-                    placeholder="Confirm new password"
-                    autoComplete="new-password"
-                    className="min-h-11 w-full rounded-xl border border-[#e5dac8] bg-[#fffdf9] px-4 py-3 text-sm text-[#2f271f] outline-none transition placeholder:text-[#a1978b] focus:border-[#b38a3e] focus:ring-4 focus:ring-[#b38a3e]/10"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={changingPassword}
-                  className="min-h-11 w-full rounded-xl bg-[#b38a3e] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#96702f] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {changingPassword
-                    ? "Changing Password..."
-                    : "Change Password"}
-                </button>
-              </form>
-            </div>
-          </div>
-
-          <div className="border-t border-[#e5dac8] bg-[#fbf5e9] px-5 py-4 sm:px-6">
-            <p className="text-xs leading-5 text-[#765823]">
-              🔒 For security, your current password
-              is required before changing your email
-              address or password.
-            </p>
-          </div>
-        </div>
+        )}
       </section>
+
+      <style jsx>{`
+        .admin-shell {
+          min-height: 100vh;
+          display: flex;
+          background: #f5f4f1;
+          color: #171817;
+        }
+
+        /* --------------------------------
+           SIDEBAR
+        -------------------------------- */
+
+        .sidebar {
+          width: 252px;
+          min-width: 252px;
+          min-height: 100vh;
+          padding: 24px 16px 18px;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          background: #151616;
+          color: #f7f5f0;
+          border-right: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar-top {
+          padding: 3px 8px 24px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+        }
+
+        .brand-mark {
+          display: flex;
+          align-items: center;
+          min-height: 42px;
+          margin-bottom: 16px;
+        }
+
+        .brand-mark img {
+          width: 126px;
+          height: auto;
+          display: block;
+          object-fit: contain;
+        }
+
+        .sidebar-identity span {
+          display: block;
+          margin-bottom: 4px;
+          color: rgba(255, 255, 255, 0.38);
+          font-size: 8px;
+          line-height: 1;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+        }
+
+        .sidebar-identity strong {
+          display: block;
+          color: rgba(255, 255, 255, 0.88);
+          font-size: 13px;
+          line-height: 1.2;
+          font-weight: 500;
+        }
+
+        .sidebar-nav {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          padding: 20px 0;
+        }
+
+        .nav-label {
+          margin: 14px 9px 7px;
+          color: rgba(255, 255, 255, 0.29);
+          font-size: 8px;
+          line-height: 1;
+          font-weight: 700;
+          letter-spacing: 0.17em;
+          text-transform: uppercase;
+        }
+
+        .nav-item {
+          min-height: 42px;
+          padding: 0 10px;
+          border: 1px solid transparent;
+          border-radius: 7px;
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          color: rgba(255, 255, 255, 0.57);
+          background: transparent;
+          text-decoration: none;
+          font: inherit;
+          font-size: 11px;
+          text-align: left;
+          cursor: pointer;
+          transition:
+            background 180ms ease,
+            color 180ms ease,
+            border-color 180ms ease;
+        }
+
+        .nav-item:hover {
+          color: rgba(255, 255, 255, 0.9);
+          background: rgba(255, 255, 255, 0.045);
+          border-color: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-item.active {
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.09);
+          border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .nav-icon {
+          width: 20px;
+          height: 20px;
+          flex: 0 0 20px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(255, 255, 255, 0.36);
+        }
+
+        .nav-item.active .nav-icon {
+          color: #c2a978;
+        }
+
+        .nav-icon svg {
+          width: 15px;
+          height: 15px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.45;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
+        .nav-item em {
+          margin-left: auto;
+          padding: 4px 6px;
+          border-radius: 4px;
+          background: rgba(255, 255, 255, 0.045);
+          color: rgba(255, 255, 255, 0.28);
+          font-style: normal;
+          font-size: 7px;
+          line-height: 1;
+          font-weight: 700;
+          letter-spacing: 0.09em;
+          text-transform: uppercase;
+        }
+
+        .nav-item.disabled {
+          cursor: default;
+          opacity: 0.72;
+        }
+
+        .nav-item.disabled:hover {
+          color: rgba(255, 255, 255, 0.57);
+          background: transparent;
+          border-color: transparent;
+        }
+
+        .nav-count {
+          margin-left: auto;
+          min-width: 22px;
+          height: 22px;
+          padding: 0 5px;
+          box-sizing: border-box;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          background: #c2a978;
+          color: #171817;
+          font-size: 8px;
+          font-weight: 800;
+        }
+
+        .sidebar-bottom {
+          margin-top: auto;
+          padding-top: 16px;
+          border-top: 1px solid rgba(255, 255, 255, 0.09);
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .sidebar-link,
+        .sidebar-logout {
+          min-height: 39px;
+          padding: 0 10px;
+          border: 1px solid transparent;
+          border-radius: 7px;
+          box-sizing: border-box;
+          background: transparent;
+          color: rgba(255, 255, 255, 0.53);
+          text-decoration: none;
+          font: inherit;
+          font-size: 10px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          transition:
+            color 180ms ease,
+            background 180ms ease;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-logout:hover {
+          color: rgba(255, 255, 255, 0.9);
+          background: rgba(255, 255, 255, 0.04);
+        }
+
+        .sidebar-arrow {
+          font-size: 13px;
+          color: rgba(255, 255, 255, 0.28);
+        }
+
+        /* --------------------------------
+           MAIN
+        -------------------------------- */
+
+        .main-area {
+          flex: 1;
+          min-width: 0;
+          padding: 32px 38px 52px;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+
+        .main-header {
+          min-height: 92px;
+          padding-bottom: 25px;
+          border-bottom: 1px solid #e2e0dc;
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 30px;
+        }
+
+        .breadcrumb {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          color: #aaa6a0;
+          font-size: 8px;
+          line-height: 1;
+          font-weight: 800;
+          letter-spacing: 0.16em;
+        }
+
+        .breadcrumb-line {
+          width: 18px;
+          height: 1px;
+          background: #c5a978;
+        }
+
+        .header-copy h1 {
+          margin: 9px 0 5px;
+          color: #181918;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 41px;
+          line-height: 1;
+          font-weight: 500;
+          letter-spacing: -0.035em;
+        }
+
+        .header-copy p {
+          margin: 0;
+          color: #817e77;
+          font-size: 12px;
+          line-height: 1.6;
+        }
+
+        .header-tools {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          padding-bottom: 2px;
+        }
+
+        .session-status {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          color: #85827b;
+          font-size: 9px;
+          white-space: nowrap;
+        }
+
+        .status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #718778;
+          box-shadow: 0 0 0 3px rgba(113, 135, 120, 0.1);
+        }
+
+        .view-site-button {
+          min-height: 36px;
+          padding: 0 12px;
+          border: 1px solid #dedbd5;
+          border-radius: 6px;
+          box-sizing: border-box;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          color: #242522;
+          background: #ffffff;
+          text-decoration: none;
+          font-size: 10px;
+          font-weight: 700;
+          transition:
+            background 180ms ease,
+            border-color 180ms ease,
+            transform 180ms ease;
+        }
+
+        .view-site-button:hover {
+          background: #f9f8f5;
+          border-color: #cfcac2;
+          transform: translateY(-1px);
+        }
+
+        .view-site-button span {
+          color: #a48c5e;
+          font-size: 13px;
+        }
+
+        /* --------------------------------
+           STATS
+        -------------------------------- */
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 10px;
+          margin: 20px 0 42px;
+        }
+
+        .stat-card {
+          min-height: 125px;
+          padding: 18px;
+          border: 1px solid #e3e1dc;
+          border-radius: 8px;
+          box-sizing: border-box;
+          background: #ffffff;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          transition:
+            transform 180ms ease,
+            border-color 180ms ease,
+            box-shadow 180ms ease;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-2px);
+          border-color: #d6d1c8;
+          box-shadow: 0 10px 28px rgba(28, 27, 24, 0.055);
+        }
+
+        .stat-card.primary-stat {
+          background: #191a19;
+          border-color: #191a19;
+          color: #ffffff;
+        }
+
+        .stat-card.enquiry-stat {
+          background: #eee7db;
+          border-color: #e6ddcf;
+        }
+
+        .stat-card-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+        }
+
+        .stat-label {
+          color: #79766f;
+          font-size: 8px;
+          font-weight: 800;
+          letter-spacing: 0.13em;
+          text-transform: uppercase;
+        }
+
+        .primary-stat .stat-label {
+          color: rgba(255, 255, 255, 0.47);
+        }
+
+        .stat-symbol {
+          color: #b7afa3;
+          font-size: 8px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+        }
+
+        .primary-stat .stat-symbol {
+          color: #c3a978;
+        }
+
+        .stat-card-bottom {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .stat-card strong {
+          color: #1a1b19;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 36px;
+          line-height: 0.95;
+          font-weight: 500;
+          letter-spacing: -0.035em;
+        }
+
+        .primary-stat strong {
+          color: #ffffff;
+        }
+
+        .stat-card small {
+          padding-bottom: 2px;
+          color: #9a958c;
+          font-size: 9px;
+          white-space: nowrap;
+        }
+
+        .primary-stat small {
+          color: rgba(255, 255, 255, 0.38);
+        }
+
+        /* --------------------------------
+           MANAGEMENT MODULES
+        -------------------------------- */
+
+        .section-block {
+          margin-bottom: 14px;
+        }
+
+        .section-heading {
+          margin-bottom: 17px;
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 20px;
+        }
+
+        .section-kicker {
+          display: block;
+          color: #a08c6c;
+          font-size: 8px;
+          line-height: 1;
+          font-weight: 800;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+        }
+
+        .section-heading h2 {
+          margin: 7px 0 0;
+          color: #1a1b19;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 27px;
+          line-height: 1;
+          font-weight: 500;
+          letter-spacing: -0.025em;
+        }
+
+        .section-heading p {
+          margin: 0;
+          color: #9a968e;
+          font-size: 10px;
+        }
+
+        .module-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .module-card {
+          min-height: 190px;
+          padding: 18px;
+          border: 1px solid #e2e0db;
+          border-radius: 8px;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          background: #ffffff;
+          color: #191a19;
+          text-decoration: none;
+          transition:
+            transform 180ms ease,
+            border-color 180ms ease,
+            box-shadow 180ms ease;
+        }
+
+        .module-card:hover {
+          transform: translateY(-3px);
+          border-color: #d2cdc4;
+          box-shadow: 0 13px 30px rgba(28, 27, 24, 0.065);
+        }
+
+        .module-card.featured-module {
+          background: #fdfbf7;
+          border-color: #ddd5c7;
+        }
+
+        .module-card.coming {
+          background: #faf9f6;
+        }
+
+        .module-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          color: #a8a093;
+          font-size: 8px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+        }
+
+        .module-icon {
+          color: #9a8868;
+          font-size: 13px;
+        }
+
+        .module-content {
+          padding: 18px 0 22px;
+        }
+
+        .module-mini-label {
+          display: block;
+          margin-bottom: 7px;
+          color: #aaa39a;
+          font-size: 7px;
+          font-weight: 800;
+          letter-spacing: 0.15em;
+        }
+
+        .module-content h3 {
+          margin: 0 0 7px;
+          color: #1b1c1a;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 23px;
+          line-height: 1.05;
+          font-weight: 500;
+          letter-spacing: -0.02em;
+        }
+
+        .module-content p {
+          max-width: 290px;
+          margin: 0;
+          color: #7d7971;
+          font-size: 11px;
+          line-height: 1.58;
+        }
+
+        .module-footer {
+          padding-top: 12px;
+          border-top: 1px solid #ebe9e5;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          color: #8e887e;
+          font-size: 8px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        .dark-module {
+          border-color: #191a19;
+          background: #191a19;
+          color: #ffffff;
+        }
+
+        .dark-module .module-top {
+          color: rgba(255, 255, 255, 0.3);
+        }
+
+        .dark-module .module-icon {
+          color: #c1a677;
+        }
+
+        .dark-module .module-mini-label {
+          color: rgba(255, 255, 255, 0.35);
+        }
+
+        .dark-module .module-content h3 {
+          color: #ffffff;
+        }
+
+        .dark-module .module-content p {
+          color: rgba(255, 255, 255, 0.55);
+        }
+
+        .dark-module .module-footer {
+          color: rgba(255, 255, 255, 0.48);
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* --------------------------------
+           LOWER PANELS
+        -------------------------------- */
+
+        .dashboard-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: 10px;
+          margin-top: 18px;
+        }
+
+        .panel {
+          min-width: 0;
+          padding: 20px;
+          border: 1px solid #e2e0db;
+          border-radius: 8px;
+          background: #ffffff;
+        }
+
+        .panel-head {
+          min-height: 59px;
+          margin-bottom: 16px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #eceae6;
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 18px;
+        }
+
+        .panel-head h2 {
+          margin: 6px 0 0;
+          color: #1b1c1a;
+          font-family: Georgia, "Times New Roman", serif;
+          font-size: 23px;
+          line-height: 1;
+          font-weight: 500;
+          letter-spacing: -0.02em;
+        }
+
+        .panel-head p {
+          margin: 8px 0 0;
+          color: #99958d;
+          font-size: 9px;
+          line-height: 1.5;
+        }
+
+        .panel-action {
+          min-height: 33px;
+          padding: 0 10px;
+          border: 1px solid #ddd9d2;
+          border-radius: 6px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: #2b2c29;
+          background: #fbfaf7;
+          text-decoration: none;
+          font-size: 9px;
+          font-weight: 700;
+          white-space: nowrap;
+          transition:
+            background 180ms ease,
+            border-color 180ms ease;
+        }
+
+        .panel-action:hover {
+          background: #f6f4ef;
+          border-color: #cbc5bb;
+        }
+
+        .panel-action span {
+          color: #a78e5c;
+          font-size: 12px;
+        }
+
+        .panel-count {
+          min-width: 29px;
+          height: 29px;
+          padding: 0 7px;
+          box-sizing: border-box;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: #f1eadf;
+          color: #766344;
+          font-size: 9px;
+          font-weight: 800;
+        }
+
+        .list {
+          border-top: 1px solid #eceae6;
+        }
+
+        .list-row {
+          min-height: 66px;
+          padding: 10px 0;
+          box-sizing: border-box;
+          border-bottom: 1px solid #eceae6;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
+        .list-main {
+          min-width: 0;
+        }
+
+        .list-row strong {
+          display: block;
+          margin-bottom: 5px;
+          color: #252623;
+          font-size: 11px;
+          line-height: 1.35;
+          font-weight: 700;
+        }
+
+        .list-row span {
+          color: #928d84;
+          font-size: 9px;
+          line-height: 1.4;
+        }
+
+        .list-meta {
+          flex: 0 0 auto;
+          min-width: 88px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 5px;
+          text-align: right;
+        }
+
+        .list-meta strong {
+          margin: 0;
+          color: #5f5a52;
+          font-size: 10px;
+        }
+
+        .inventory-status {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #667a6d !important;
+          font-size: 8px !important;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+        }
+
+        .inventory-status i {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #768c7c;
+        }
+
+        .enquiry-meta {
+          flex: 0 0 auto;
+          min-width: 155px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 7px;
+        }
+
+        .enquiry-top-line {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+
+        .enquiry-meta small {
+          color: #a29d95;
+          font-size: 8px;
+        }
+
+        .enquiry-meta select {
+          min-height: 25px;
+          padding: 0 7px;
+          border: 1px solid #e0ddd7;
+          border-radius: 5px;
+          background: #fbfaf8;
+          color: #5e594f;
+          outline: none;
+          font-size: 8px;
+        }
+
+        .status {
+          padding: 5px 7px;
+          border-radius: 4px;
+          font-size: 7px !important;
+          line-height: 1 !important;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .status.new {
+          background: #f2e8d9;
+          color: #7a6038 !important;
+        }
+
+        .status.contacted {
+          background: #e7eee9;
+          color: #557062 !important;
+        }
+
+        .status.closed {
+          background: #eceae6;
+          color: #716c64 !important;
+        }
+
+        .empty {
+          min-height: 122px;
+          border-top: 1px solid #eceae6;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: flex-start;
+          gap: 6px;
+        }
+
+        .empty strong {
+          color: #2a2b28;
+          font-size: 11px;
+        }
+
+        .empty span {
+          color: #99958d;
+          font-size: 9px;
+          line-height: 1.5;
+        }
+
+        .empty-loader {
+          width: 14px;
+          height: 14px;
+          margin-bottom: 3px;
+          border: 1px solid #d4cec3;
+          border-top-color: #a58d60;
+          border-radius: 50%;
+          animation: dashboardSpin 700ms linear infinite;
+        }
+
+        .message {
+          margin-top: 11px;
+          padding: 11px 13px;
+          border: 1px solid #e7d9c6;
+          border-radius: 6px;
+          background: #f3eadf;
+          color: #765f41;
+          font-size: 9px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+        }
+
+        .message button {
+          width: 20px;
+          height: 20px;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          color: #8c7450;
+          cursor: pointer;
+          font-size: 15px;
+          line-height: 1;
+        }
+
+        @keyframes dashboardSpin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        /* --------------------------------
+           TABLET
+        -------------------------------- */
+
+        @media (max-width: 1120px) {
+          .sidebar {
+            width: 220px;
+            min-width: 220px;
+          }
+
+          .main-area {
+            padding: 28px 25px 45px;
+          }
+
+          .module-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        /* --------------------------------
+           MOBILE
+        -------------------------------- */
+
+        @media (max-width: 760px) {
+          .admin-shell {
+            display: block;
+            min-height: 100vh;
+          }
+
+          .sidebar {
+            width: 100%;
+            min-width: 0;
+            min-height: auto;
+            padding: 14px;
+          }
+
+          .sidebar-top {
+            padding: 2px 6px 15px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+          }
+
+          .brand-mark {
+            min-height: 35px;
+            margin: 0;
+          }
+
+          .brand-mark img {
+            width: 96px;
+          }
+
+          .sidebar-identity {
+            padding-left: 14px;
+            border-left: 1px solid rgba(255, 255, 255, 0.12);
+          }
+
+          .sidebar-identity span {
+            font-size: 7px;
+          }
+
+          .sidebar-identity strong {
+            font-size: 11px;
+          }
+
+          .sidebar-nav {
+            padding: 12px 0 2px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 3px;
+          }
+
+          .nav-label {
+            grid-column: 1 / -1;
+            margin: 9px 5px 2px;
+          }
+
+          .nav-item {
+            min-height: 38px;
+            padding: 0 8px;
+            font-size: 9px;
+          }
+
+          .nav-icon {
+            width: 17px;
+            height: 17px;
+            flex-basis: 17px;
+          }
+
+          .nav-icon svg {
+            width: 13px;
+            height: 13px;
+          }
+
+          .sidebar-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 10px;
+            padding-top: 10px;
+          }
+
+          .main-area {
+            padding: 24px 14px 38px;
+          }
+
+          .main-header {
+            min-height: auto;
+            padding-bottom: 20px;
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 18px;
+          }
+
+          .header-copy h1 {
+            font-size: 35px;
+          }
+
+          .header-tools {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 16px 0 34px;
+          }
+
+          .stat-card {
+            min-height: 110px;
+            padding: 14px;
+          }
+
+          .stat-card strong {
+            font-size: 30px;
+          }
+
+          .stat-card-bottom {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 5px;
+          }
+
+          .section-heading {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 9px;
+          }
+
+          .module-grid,
+          .dashboard-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .module-card {
+            min-height: 170px;
+          }
+
+          .dashboard-grid {
+            margin-top: 12px;
+          }
+
+          .panel {
+            padding: 16px;
+          }
+
+          .panel-head {
+            gap: 12px;
+          }
+
+          .list-row {
+            align-items: flex-start;
+          }
+
+          .list-meta,
+          .enquiry-meta {
+            min-width: 0;
+          }
+
+          .enquiry-meta {
+            max-width: 135px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .header-tools {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 10px;
+          }
+
+          .view-site-button {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .stat-label {
+            font-size: 7px;
+          }
+
+          .stat-card strong {
+            font-size: 27px;
+          }
+
+          .stat-card small {
+            font-size: 8px;
+          }
+
+          .panel-head {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .panel-action {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .list-row {
+            gap: 10px;
+          }
+
+          .list-main {
+            max-width: 52%;
+          }
+
+          .list-row strong {
+            font-size: 10px;
+          }
+
+          .list-row span {
+            font-size: 8px;
+          }
+
+          .enquiry-meta {
+            max-width: 45%;
+          }
+
+          .enquiry-top-line {
+            flex-wrap: wrap;
+          }
+        }
+
+
+        /* YM REALTY COLOR REFINEMENT */
+
+        .admin-shell {
+          background:
+            radial-gradient(
+              circle at 78% 8%,
+              rgba(195, 169, 116, 0.08),
+              transparent 25%
+            ),
+            #f3f1ec;
+        }
+
+        .sidebar {
+          background:
+            linear-gradient(
+              180deg,
+              #151716 0%,
+              #171918 55%,
+              #121413 100%
+            );
+          border-right: 1px solid rgba(194, 166, 111, 0.16);
+        }
+
+        .sidebar-top {
+          border-bottom-color: rgba(194, 166, 111, 0.16);
+        }
+
+        .brand-mark img {
+          filter: none;
+        }
+
+        .sidebar-identity span {
+          color: rgba(210, 193, 162, 0.56);
+        }
+
+        .sidebar-identity strong {
+          color: #f3ede2;
+        }
+
+        .nav-label {
+          color: rgba(194, 166, 111, 0.58);
+        }
+
+        .nav-item {
+          color: rgba(247, 244, 238, 0.56);
+        }
+
+        .nav-item:hover {
+          color: #ffffff;
+          background: rgba(194, 166, 111, 0.08);
+          border-color: rgba(194, 166, 111, 0.1);
+        }
+
+        .nav-item.active {
+          color: #ffffff;
+          background:
+            linear-gradient(
+              90deg,
+              rgba(194, 166, 111, 0.16),
+              rgba(194, 166, 111, 0.05)
+            );
+          border-color: rgba(194, 166, 111, 0.16);
+          box-shadow: inset 2px 0 0 #c2a66f;
+        }
+
+        .nav-item.active .nav-icon {
+          color: #d1b57d;
+        }
+
+        .nav-item em {
+          background: rgba(194, 166, 111, 0.08);
+          color: rgba(211, 191, 155, 0.48);
+        }
+
+        .nav-count {
+          background: #c2a66f;
+          color: #171817;
+          box-shadow: 0 4px 12px rgba(194, 166, 111, 0.18);
+        }
+
+        .sidebar-bottom {
+          border-top-color: rgba(194, 166, 111, 0.15);
+        }
+
+        .main-area {
+          background: transparent;
+        }
+
+        .main-header {
+          border-bottom-color: #ddd9d1;
+        }
+
+        .breadcrumb {
+          color: #a19a8f;
+        }
+
+        .breadcrumb-line {
+          background: #b99a63;
+        }
+
+        .header-copy h1 {
+          color: #171918;
+        }
+
+        .header-copy p {
+          color: #77736b;
+        }
+
+        .session-status {
+          color: #7f837d;
+        }
+
+        .status-dot {
+          background: #718979;
+          box-shadow: 0 0 0 4px rgba(113, 137, 121, 0.11);
+        }
+
+        .view-site-button {
+          border-color: #d8d2c8;
+          background: #fbfaf7;
+        }
+
+        .view-site-button:hover {
+          background: #ffffff;
+          border-color: #bfae91;
+        }
+
+        .view-site-button span {
+          color: #ad8e56;
+        }
+
+        /* STAT CARDS */
+
+        .stat-card {
+          border-color: #dedad2;
+          background:
+            linear-gradient(
+              145deg,
+              #ffffff 0%,
+              #fbfaf7 100%
+            );
+        }
+
+        .stat-card:hover {
+          border-color: #cfc5b5;
+          box-shadow:
+            0 14px 32px rgba(44, 39, 32, 0.07);
+        }
+
+        .stat-card:nth-child(2) {
+          background:
+            linear-gradient(
+              145deg,
+              #fbf7ef 0%,
+              #f3ede1 100%
+            );
+          border-color: #e1d7c6;
+        }
+
+        .stat-card:nth-child(3) {
+          background:
+            linear-gradient(
+              145deg,
+              #f7f8f5 0%,
+              #e9eee9 100%
+            );
+          border-color: #dbe2dc;
+        }
+
+        .stat-card.enquiry-stat {
+          background:
+            linear-gradient(
+              145deg,
+              #eee7d9 0%,
+              #e6dece 100%
+            );
+          border-color: #ded2bc;
+        }
+
+        .stat-card.primary-stat {
+          background:
+            linear-gradient(
+              145deg,
+              #1c1f1d 0%,
+              #141615 100%
+            );
+          border-color: #1c1f1d;
+        }
+
+        .stat-label {
+          color: #77736b;
+        }
+
+        .stat-symbol {
+          color: #aa9a80;
+        }
+
+        .primary-stat .stat-label,
+        .primary-stat .stat-symbol {
+          color: rgba(225, 207, 171, 0.56);
+        }
+
+        .stat-card strong {
+          color: #222421;
+        }
+
+        .primary-stat strong {
+          color: #ffffff;
+        }
+
+        .stat-card small {
+          color: #8d887f;
+        }
+
+        .primary-stat small {
+          color: rgba(255, 255, 255, 0.42);
+        }
+
+        /* SECTION HEADINGS */
+
+        .section-kicker {
+          color: #a18455;
+        }
+
+        .section-heading h2 {
+          color: #171918;
+        }
+
+        .section-heading p {
+          color: #918c83;
+        }
+
+        /* MODULES */
+
+        .module-card {
+          border-color: #dfdcd5;
+          background:
+            linear-gradient(
+              145deg,
+              #ffffff 0%,
+              #fbfaf7 100%
+            );
+        }
+
+        .module-card:hover {
+          border-color: #cdbfa8;
+          box-shadow:
+            0 15px 34px rgba(39, 35, 29, 0.075);
+        }
+
+        .module-card.featured-module {
+          background:
+            linear-gradient(
+              145deg,
+              #fbf6ed 0%,
+              #f2eadc 100%
+            );
+          border-color: #ded0b7;
+        }
+
+        .module-card:nth-child(2) {
+          background:
+            linear-gradient(
+              145deg,
+              #fafbf9 0%,
+              #eef2ef 100%
+            );
+          border-color: #dce2dd;
+        }
+
+        .module-card:nth-child(3),
+        .module-card:nth-child(4),
+        .module-card:nth-child(5) {
+          background: #faf9f6;
+        }
+
+        .module-top {
+          color: #aaa08f;
+        }
+
+        .module-icon {
+          color: #aa8c59;
+        }
+
+        .module-mini-label {
+          color: #a99b87;
+        }
+
+        .module-content h3 {
+          color: #1a1c1a;
+        }
+
+        .module-content p {
+          color: #76736c;
+        }
+
+        .module-footer {
+          border-top-color: rgba(70, 63, 52, 0.1);
+          color: #8a8071;
+        }
+
+        .dark-module {
+          background:
+            linear-gradient(
+              145deg,
+              #1b1e1c 0%,
+              #121514 100%
+            );
+          border-color: #1b1e1c;
+          box-shadow:
+            inset 0 1px 0 rgba(194, 166, 111, 0.08);
+        }
+
+        .dark-module .module-icon {
+          color: #c9ab72;
+        }
+
+        /* PANELS */
+
+        .panel {
+          border-color: #dfdcd6;
+          background:
+            linear-gradient(
+              145deg,
+              #ffffff 0%,
+              #fcfbf8 100%
+            );
+          box-shadow:
+            0 6px 22px rgba(35, 31, 26, 0.025);
+        }
+
+        .panel-head {
+          border-bottom-color: #e8e4dd;
+        }
+
+        .panel-action {
+          border-color: #d9d3c9;
+          background: #faf8f4;
+        }
+
+        .panel-action:hover {
+          background: #f2eee7;
+          border-color: #c5b89f;
+        }
+
+        .panel-action span {
+          color: #a7864f;
+        }
+
+        .panel-count {
+          background:
+            linear-gradient(
+              145deg,
+              #eee5d6,
+              #e6dccb
+            );
+          color: #715d3b;
+        }
+
+        .list {
+          border-top-color: #e8e5df;
+        }
+
+        .list-row {
+          border-bottom-color: #e9e6e0;
+        }
+
+        .list-row strong {
+          color: #252723;
+        }
+
+        .list-row span {
+          color: #918c83;
+        }
+
+        .list-meta strong {
+          color: #665e52;
+        }
+
+        .inventory-status {
+          color: #657c6c !important;
+        }
+
+        .inventory-status i {
+          background: #708878;
+          box-shadow: 0 0 0 3px rgba(112, 136, 120, 0.08);
+        }
+
+        .enquiry-meta select {
+          border-color: #ddd8cf;
+          background: #faf9f6;
+        }
+
+        .enquiry-meta select:focus {
+          outline: none;
+          border-color: #bca77d;
+          box-shadow: 0 0 0 3px rgba(188, 167, 125, 0.12);
+        }
+
+        .status.new {
+          background: #f2e5d0;
+          color: #87652e !important;
+        }
+
+        .status.contacted {
+          background: #e2ece5;
+          color: #567160 !important;
+        }
+
+        .status.closed {
+          background: #eceae6;
+          color: #716c64 !important;
+        }
+
+        .empty {
+          border-top-color: #e8e5df;
+        }
+
+        .empty-loader {
+          border-color: #ddd5c8;
+          border-top-color: #a98b58;
+        }
+
+        .message {
+          border-color: #dfceb2;
+          background:
+            linear-gradient(
+              145deg,
+              #f4ecdf,
+              #eee3d3
+            );
+          color: #735d3d;
+        }
+
+
+        /* YM REALTY ATTRACTIVE COLOR PASS */
+
+        .admin-shell {
+          background:
+            radial-gradient(
+              circle at 82% 5%,
+              rgba(196, 166, 108, 0.13),
+              transparent 24%
+            ),
+            radial-gradient(
+              circle at 20% 90%,
+              rgba(112, 137, 121, 0.08),
+              transparent 22%
+            ),
+            #f3f1ec;
+        }
+
+        /* HEADER */
+
+        .breadcrumb span:first-child {
+          color: #a18455;
+        }
+
+        .breadcrumb span:last-child {
+          color: #8d8a83;
+        }
+
+        .breadcrumb-line {
+          background: #c3a46b;
+        }
+
+        /* STATS */
+
+        .stat-card {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .stat-card::after {
+          content: "";
+          position: absolute;
+          width: 90px;
+          height: 90px;
+          right: -35px;
+          bottom: -45px;
+          border-radius: 50%;
+          border: 1px solid rgba(177, 146, 91, 0.14);
+          pointer-events: none;
+        }
+
+        .stat-card:nth-child(2)::after {
+          border-color: rgba(166, 132, 74, 0.17);
+        }
+
+        .stat-card:nth-child(3)::after {
+          border-color: rgba(93, 123, 104, 0.16);
+        }
+
+        .stat-card:nth-child(4)::after {
+          border-color: rgba(157, 126, 78, 0.18);
+        }
+
+        .stat-card.primary-stat {
+          background:
+            linear-gradient(
+              145deg,
+              #202522 0%,
+              #141716 100%
+            );
+          box-shadow:
+            inset 0 2px 0 rgba(202, 173, 116, 0.78),
+            0 10px 28px rgba(20, 23, 22, 0.12);
+        }
+
+        .stat-card:nth-child(2) {
+          background:
+            linear-gradient(
+              145deg,
+              #fffaf0 0%,
+              #f1e6d3 100%
+            );
+          box-shadow:
+            inset 0 2px 0 #c3a46b;
+        }
+
+        .stat-card:nth-child(3) {
+          background:
+            linear-gradient(
+              145deg,
+              #f5faf7 0%,
+              #e3eee7 100%
+            );
+          box-shadow:
+            inset 0 2px 0 #75917d;
+        }
+
+        .stat-card:nth-child(4) {
+          background:
+            linear-gradient(
+              145deg,
+              #f8f0e2 0%,
+              #eadeca 100%
+            );
+          box-shadow:
+            inset 0 2px 0 #bd9558;
+        }
+
+        .stat-card:nth-child(2) .stat-label {
+          color: #846c43;
+        }
+
+        .stat-card:nth-child(3) .stat-label {
+          color: #5d7465;
+        }
+
+        .stat-card:nth-child(4) .stat-label {
+          color: #85673d;
+        }
+
+        /* MANAGEMENT TITLE */
+
+        .section-kicker {
+          color: #a4814d;
+        }
+
+        .section-heading h2 {
+          color: #191b19;
+        }
+
+        /* MODULE CARDS */
+
+        .module-card {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .module-card::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 2px;
+          background: #d8d2c7;
+          opacity: 0.7;
+          transition:
+            opacity 180ms ease,
+            transform 180ms ease;
+        }
+
+        .module-card:hover::before {
+          opacity: 1;
+        }
+
+        .module-card.featured-module,
+        .module-card:nth-child(2),
+        .module-card:nth-child(3),
+        .module-card:nth-child(4),
+        .module-card:nth-child(5) {
+          background: #ffffff;
+          border-color: #dfdcd5;
+        }
+
+        .module-card.featured-module::before {
+          background: #c3a46b;
+        }
+
+        .module-card:nth-child(2)::before {
+          background: #789384;
+        }
+
+        .module-card:nth-child(3)::before {
+          background: #a79b8b;
+        }
+
+        .module-card:nth-child(4)::before {
+          background: #b49463;
+        }
+
+        .module-card:nth-child(5)::before {
+          background: #7a94a5;
+        }
+
+        .dark-module {
+          background:
+            linear-gradient(
+              145deg,
+              #202522 0%,
+              #121514 100%
+            );
+          border-color: #202522;
+          box-shadow:
+            inset 0 2px 0 #bd9b61,
+            0 12px 30px rgba(18, 21, 20, 0.12);
+        }
+
+        .dark-module::before {
+          display: none;
+        }
+
+        .module-card:nth-child(4) .module-icon {
+          color: #a8844e;
+        }
+
+        .module-card:nth-child(5) .module-icon {
+          color: #718ea0;
+        }
+
+        /* LOWER PANELS */
+
+        .panel {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .panel::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 2px;
+          background: linear-gradient(
+            90deg,
+            #c5a66d,
+            #ebe3d5,
+            transparent
+          );
+          opacity: 0.7;
+        }
+
+        .panel:nth-child(2)::before {
+          background: linear-gradient(
+            90deg,
+            #789283,
+            #e2ebe5,
+            transparent
+          );
+        }
+
+        .panel-count {
+          background:
+            linear-gradient(
+              145deg,
+              #f1e5cf,
+              #e3d3b7
+            );
+          color: #765d36;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        }
+
+        .inventory-status {
+          color: #5e7968 !important;
+        }
+
+        .inventory-status i {
+          background: #708e7b;
+        }
+
+        /* LEAD STATUS COLORS */
+
+        .status.new {
+          background: #f3e3c9;
+          color: #8a632e !important;
+          box-shadow: inset 0 0 0 1px rgba(171, 133, 73, 0.09);
+        }
+
+        .status.contacted {
+          background: #dfece4;
+          color: #4e6f5c !important;
+          box-shadow: inset 0 0 0 1px rgba(86, 121, 99, 0.08);
+        }
+
+        .status.closed {
+          background: #e9e7e3;
+          color: #6e6a62 !important;
+        }
+
+        /* BUTTON ACCENTS */
+
+        .view-site-button {
+          box-shadow: 0 3px 12px rgba(42, 38, 31, 0.04);
+        }
+
+        .view-site-button:hover {
+          box-shadow: 0 7px 18px rgba(46, 41, 32, 0.07);
+        }
+
+        .panel-action:hover {
+          color: #6f5936;
+        }
+
+        /* SIDEBAR GOLD DETAILS */
+
+        .sidebar-top::after {
+          content: "";
+          display: block;
+          width: 28px;
+          height: 1px;
+          margin-top: 18px;
+          background: #bd9d64;
+          opacity: 0.7;
+        }
+
+        .nav-item.active {
+          box-shadow:
+            inset 2px 0 0 #c3a46b,
+            0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .nav-item.active .nav-icon {
+          color: #d4b577;
+        }
+
+        .sidebar-link:hover .sidebar-arrow,
+        .sidebar-logout:hover .sidebar-arrow {
+          color: #c3a46b;
+        }
+
+        /* MESSAGE */
+
+        .message {
+          border-color: #dcc9a9;
+          background:
+            linear-gradient(
+              145deg,
+              #f6ecdc,
+              #ede0cb
+            );
+          color: #735b38;
+        }
+
+
+        /* FINAL STATS CARD UNIFICATION */
+
+        .stats-grid .stat-card,
+        .stats-grid .stat-card.primary-stat,
+        .stats-grid .stat-card.enquiry-stat,
+        .stats-grid .stat-card:nth-child(2),
+        .stats-grid .stat-card:nth-child(3),
+        .stats-grid .stat-card:nth-child(4) {
+          position: relative;
+          overflow: hidden;
+          background: #ffffff;
+          color: #1a1b19;
+          border: 1px solid #ddd9d1;
+          box-shadow: none;
+        }
+
+        .stats-grid .stat-card::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: #c3a46b;
+        }
+
+        .stats-grid .stat-card:nth-child(2)::before {
+          background: #b59a69;
+        }
+
+        .stats-grid .stat-card:nth-child(3)::before {
+          background: #789384;
+        }
+
+        .stats-grid .stat-card:nth-child(4)::before {
+          background: #a88452;
+        }
+
+        .stats-grid .stat-card::after {
+          width: 95px;
+          height: 95px;
+          right: -38px;
+          bottom: -48px;
+          border-color: rgba(185, 157, 105, 0.12);
+        }
+
+        .stats-grid .stat-card:nth-child(3)::after {
+          border-color: rgba(111, 139, 120, 0.12);
+        }
+
+        .stats-grid .stat-card:hover,
+        .stats-grid .stat-card.primary-stat:hover,
+        .stats-grid .stat-card.enquiry-stat:hover {
+          background: #ffffff;
+          border-color: #cfc7ba;
+          box-shadow:
+            0 12px 28px rgba(38, 34, 29, 0.06);
+          transform: translateY(-2px);
+        }
+
+        .stats-grid .stat-label {
+          color: #77736c;
+        }
+
+        .stats-grid .stat-symbol {
+          color: #a79a87;
+        }
+
+        .stats-grid .stat-card:nth-child(2) .stat-label {
+          color: #856d47;
+        }
+
+        .stats-grid .stat-card:nth-child(3) .stat-label {
+          color: #587161;
+        }
+
+        .stats-grid .stat-card:nth-child(4) .stat-label {
+          color: #82633c;
+        }
+
+        .stats-grid .stat-card strong,
+        .stats-grid .stat-card.primary-stat strong {
+          color: #20221f;
+        }
+
+        .stats-grid .stat-card small,
+        .stats-grid .stat-card.primary-stat small {
+          color: #918c83;
+        }
+
+        .stats-grid .stat-card.primary-stat .stat-label {
+          color: #756d61;
+        }
+
+        .stats-grid .stat-card.primary-stat .stat-symbol {
+          color: #a78b58;
+        }
+
+        /* Keep the dashboard's special dark CTA only in modules,
+           not in the statistics row. */
+
+
+        /* FINAL RESIDENCE GALLERY CARD POLISH */
+
+        .module-grid .module-card.featured-module,
+        .module-grid .module-card:nth-child(2) {
+          position: relative;
+          overflow: hidden;
+          min-height: 190px;
+          background: #ffffff;
+          border: 1px solid #ddd9d1;
+          border-radius: 9px;
+          box-shadow: 0 4px 16px rgba(34, 31, 26, 0.035);
+        }
+
+        .module-grid .module-card.featured-module::before,
+        .module-grid .module-card:nth-child(2)::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          opacity: 1;
+        }
+
+        .module-grid .module-card.featured-module::before {
+          background: #c2a267;
+        }
+
+        .module-grid .module-card:nth-child(2)::before {
+          background: #789382;
+        }
+
+        .module-grid .module-card.featured-module:hover,
+        .module-grid .module-card:nth-child(2):hover {
+          background: #ffffff;
+          border-color: #cfc7b9;
+          box-shadow:
+            0 16px 34px rgba(38, 34, 28, 0.075);
+          transform: translateY(-3px);
+        }
+
+        .module-grid .module-card.featured-module .module-mini-label {
+          color: #a2814e;
+        }
+
+        .module-grid .module-card:nth-child(2) .module-mini-label {
+          color: #62806e;
+        }
+
+        .module-grid .module-card.featured-module .module-icon {
+          color: #ae8b54;
+        }
+
+        .module-grid .module-card:nth-child(2) .module-icon {
+          color: #6d8b78;
+        }
+
+        .module-grid .module-card.featured-module .module-content h3,
+        .module-grid .module-card:nth-child(2) .module-content h3 {
+          color: #191b19;
+        }
+
+        .module-grid .module-card.featured-module .module-content p,
+        .module-grid .module-card:nth-child(2) .module-content p {
+          color: #77736b;
+        }
+
+        .module-grid .module-card.featured-module .module-footer,
+        .module-grid .module-card:nth-child(2) .module-footer {
+          color: #878075;
+          border-top-color: #e9e5de;
+        }
+
+        .module-grid .module-card.featured-module .module-footer span:last-child,
+        .module-grid .module-card:nth-child(2) .module-footer span:last-child {
+          font-size: 14px;
+        }
+
+        .module-grid .module-card.featured-module .module-footer span:last-child {
+          color: #ae8c56;
+        }
+
+        .module-grid .module-card:nth-child(2) .module-footer span:last-child {
+          color: #6d8b78;
+        }
+
+
+        /* FINAL RESIDENCE GALLERY CARD BOX FIX */
+
+        .module-grid > .module-card.featured-module,
+        .module-grid > .module-card:nth-child(2) {
+          position: relative;
+          display: flex;
+          min-height: 190px;
+          padding: 20px;
+          box-sizing: border-box;
+          overflow: hidden;
+          border: 1px solid #d9d4cb !important;
+          border-radius: 9px;
+          background: #ffffff !important;
+          box-shadow:
+            0 5px 18px rgba(32, 29, 25, 0.045);
+        }
+
+        .module-grid > .module-card.featured-module::before,
+        .module-grid > .module-card:nth-child(2)::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          opacity: 1;
+        }
+
+        .module-grid > .module-card.featured-module::before {
+          background: #c2a267;
+        }
+
+        .module-grid > .module-card:nth-child(2)::before {
+          background: #789382;
+        }
+
+        .module-grid > .module-card.featured-module:hover,
+        .module-grid > .module-card:nth-child(2):hover {
+          background: #ffffff !important;
+          border-color: #c9c0b2 !important;
+          box-shadow:
+            0 15px 34px rgba(32, 29, 25, 0.075);
+          transform: translateY(-3px);
+        }
+
+        .module-grid > .module-card.featured-module .module-content,
+        .module-grid > .module-card:nth-child(2) .module-content {
+          padding-top: 18px;
+          padding-bottom: 22px;
+        }
+
+        .module-grid > .module-card.featured-module .module-mini-label {
+          color: #a07d47;
+        }
+
+        .module-grid > .module-card:nth-child(2) .module-mini-label {
+          color: #63806f;
+        }
+
+        .module-grid > .module-card.featured-module .module-icon {
+          color: #ad8950;
+        }
+
+        .module-grid > .module-card:nth-child(2) .module-icon {
+          color: #6d8978;
+        }
+
+        .module-grid > .module-card.featured-module .module-footer,
+        .module-grid > .module-card:nth-child(2) .module-footer {
+          border-top-color: #e7e3dc;
+        }
+
+        .module-grid > .module-card.featured-module .module-footer span:last-child {
+          color: #ae8b55;
+        }
+
+        .module-grid > .module-card:nth-child(2) .module-footer span:last-child {
+          color: #6c8977;
+        }
+
+
+        /* FINAL ACTION BOX PATTERN */
+
+        .module-grid > .module-card.featured-module .module-footer,
+        .module-grid > .module-card:nth-child(2) .module-footer {
+          min-height: 42px;
+          margin: 0;
+          padding: 0 12px;
+          box-sizing: border-box;
+          border: 1px solid #e2ddd4;
+          border-radius: 6px;
+          background: #faf8f4;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          color: #81796d;
+          transition:
+            background 180ms ease,
+            border-color 180ms ease,
+            transform 180ms ease;
+        }
+
+        .module-grid > .module-card.featured-module .module-footer {
+          border-left: 3px solid #c2a267;
+        }
+
+        .module-grid > .module-card:nth-child(2) .module-footer {
+          border-left: 3px solid #789382;
+        }
+
+        .module-grid > .module-card.featured-module:hover .module-footer {
+          background: #f6f0e5;
+          border-color: #d5c8b4;
+        }
+
+        .module-grid > .module-card:nth-child(2):hover .module-footer {
+          background: #f1f5f2;
+          border-color: #cddbd2;
+        }
+
+        .module-grid > .module-card.featured-module .module-footer span:first-child,
+        .module-grid > .module-card:nth-child(2) .module-footer span:first-child {
+          font-size: 8px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        .module-grid > .module-card.featured-module .module-footer span:last-child,
+        .module-grid > .module-card:nth-child(2) .module-footer span:last-child {
+          width: 25px;
+          height: 25px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: #ffffff;
+          border: 1px solid #e1ddd5;
+          font-size: 12px;
+        }
+
+        .module-grid > .module-card.featured-module .module-footer span:last-child {
+          color: #aa8750;
+        }
+
+        .module-grid > .module-card:nth-child(2) .module-footer span:last-child {
+          color: #668271;
+        }
+
+        .module-grid > .module-card.featured-module:hover .module-footer span:last-child,
+        .module-grid > .module-card:nth-child(2):hover .module-footer span:last-child {
+          transform: translateX(2px);
+        }
+
+
+        /* FINAL MANAGE YOUR SITE CONTAINER */
+
+        .section-block {
+          position: relative;
+          padding: 22px;
+          margin-bottom: 16px;
+          box-sizing: border-box;
+          border: 1px solid #dedbd5;
+          border-radius: 10px;
+          background:
+            linear-gradient(
+              145deg,
+              #ffffff 0%,
+              #fbfaf7 100%
+            );
+          box-shadow:
+            0 7px 24px rgba(35, 32, 27, 0.035);
+        }
+
+        .section-heading {
+          margin: 0 0 18px;
+          padding-bottom: 18px;
+          border-bottom: 1px solid #e9e6e0;
+        }
+
+        .section-heading h2 {
+          margin-top: 7px;
+        }
+
+        .module-grid {
+          gap: 10px;
+        }
+
+        .module-grid > .module-card {
+          position: relative;
+          min-height: 190px;
+          padding: 19px;
+          box-sizing: border-box;
+          overflow: hidden;
+          border: 1px solid #ddd9d1 !important;
+          border-radius: 8px;
+          background: #ffffff !important;
+          box-shadow:
+            0 4px 15px rgba(35, 32, 27, 0.035);
+        }
+
+        .module-grid > .module-card::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          opacity: 1;
+        }
+
+        .module-grid > .module-card:nth-child(1)::before {
+          background: #c2a267;
+        }
+
+        .module-grid > .module-card:nth-child(2)::before {
+          background: #789382;
+        }
+
+        .module-grid > .module-card:nth-child(3)::before {
+          background: #aaa092;
+        }
+
+        .module-grid > .module-card:nth-child(4)::before {
+          background: #b49463;
+        }
+
+        .module-grid > .module-card:nth-child(5)::before {
+          background: #7b95a5;
+        }
+
+        .module-grid > .module-card:nth-child(6) {
+          background:
+            linear-gradient(
+              145deg,
+              #1e2220 0%,
+              #141716 100%
+            ) !important;
+          border-color: #1e2220 !important;
+        }
+
+        .module-grid > .module-card:nth-child(6)::before {
+          background: #c0a06a;
+        }
+
+        .module-grid > .module-card:hover {
+          border-color: #c9c1b5 !important;
+          box-shadow:
+            0 14px 30px rgba(35, 32, 27, 0.065);
+          transform: translateY(-3px);
+        }
+
+        .module-grid > .module-card:nth-child(6):hover {
+          border-color: #8e7851 !important;
+        }
+
+        .module-grid > .module-card .module-top {
+          position: relative;
+          z-index: 1;
+        }
+
+        .module-grid > .module-card .module-content {
+          position: relative;
+          z-index: 1;
+        }
+
+        .module-grid > .module-card .module-footer {
+          position: relative;
+          z-index: 1;
+        }
+
+        .module-grid > .module-card:not(:nth-child(6)) .module-footer {
+          min-height: 40px;
+          padding: 0 11px;
+          box-sizing: border-box;
+          border: 1px solid #e1ddd5;
+          border-radius: 6px;
+          background: #faf8f4;
+        }
+
+        .module-grid > .module-card:nth-child(1) .module-footer {
+          border-left: 3px solid #c2a267;
+        }
+
+        .module-grid > .module-card:nth-child(2) .module-footer {
+          border-left: 3px solid #789382;
+        }
+
+        .module-grid > .module-card:nth-child(3) .module-footer {
+          border-left: 3px solid #aaa092;
+        }
+
+        .module-grid > .module-card:nth-child(4) .module-footer {
+          border-left: 3px solid #b49463;
+        }
+
+        .module-grid > .module-card:nth-child(5) .module-footer {
+          border-left: 3px solid #7b95a5;
+        }
+
+        .module-grid > .module-card:not(:nth-child(6)) .module-footer span:last-child {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: #ffffff;
+          border: 1px solid #e0dbd3;
+        }
+
+        .module-grid > .module-card:nth-child(1) .module-footer span:last-child {
+          color: #ae8b54;
+        }
+
+        .module-grid > .module-card:nth-child(2) .module-footer span:last-child {
+          color: #6d8978;
+        }
+
+        .module-grid > .module-card:nth-child(3) .module-footer span:last-child,
+        .module-grid > .module-card:nth-child(4) .module-footer span:last-child,
+        .module-grid > .module-card:nth-child(5) .module-footer span:last-child {
+          color: #8f8475;
+        }
+
+        .module-grid > .module-card:nth-child(6) .module-footer {
+          border-color: rgba(255, 255, 255, 0.11);
+        }
+
+        @media (max-width: 760px) {
+          .section-block {
+            padding: 16px;
+            border-radius: 9px;
+          }
+
+          .section-heading {
+            padding-bottom: 15px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+          .stat-card,
+          .module-card,
+          .view-site-button,
+          .nav-item,
+          .sidebar-link,
+          .sidebar-logout {
+            transition: none;
+          }
+
+          .empty-loader {
+            animation: none;
+          }
+        }
+
+        /* Final premium module-card system */
+        .module-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
+          margin-top: 18px;
+        }
+
+        .module-grid > .module-card {
+          min-height: 232px;
+          padding: 20px 20px 0 !important;
+          border: 1px solid #ded9d1 !important;
+          border-radius: 11px !important;
+          background: #fffefa !important;
+          box-shadow:
+            0 8px 22px rgba(35, 32, 27, 0.035),
+            0 1px 3px rgba(35, 32, 27, 0.025);
+          transform: translateY(0);
+          transition:
+            transform 180ms ease,
+            box-shadow 180ms ease,
+            border-color 180ms ease;
+        }
+
+        .module-grid > .module-card::before {
+          height: 3px;
+          opacity: 1;
+          border-radius: 11px 11px 0 0;
+        }
+
+        .module-grid > .module-card:hover {
+          transform: translateY(-4px);
+          border-color: #c9c1b5 !important;
+          box-shadow:
+            0 18px 34px rgba(35, 32, 27, 0.075),
+            0 3px 7px rgba(35, 32, 27, 0.035);
+        }
+
+        .module-grid > .module-card .module-top {
+          padding-bottom: 16px;
+        }
+
+        .module-grid > .module-card .module-top > span:first-child {
+          font-size: 9px;
+          letter-spacing: 0.14em;
+          color: #a39c91;
+        }
+
+        .module-grid > .module-card .module-icon {
+          width: 29px;
+          height: 29px;
+          border-radius: 7px;
+          background: #fffefa;
+          border: 1px solid #ded8cf;
+          color: #93774a;
+          font-size: 13px;
+        }
+
+        .module-grid > .module-card .module-content {
+          padding-top: 6px;
+        }
+
+        .module-grid > .module-card .module-mini-label {
+          margin-bottom: 9px;
+          font-size: 8px;
+          letter-spacing: 0.17em;
+        }
+
+        .module-grid > .module-card .module-content h3 {
+          font-size: 25px;
+          line-height: 1.05;
+          letter-spacing: -0.025em;
+        }
+
+        .module-grid > .module-card .module-content p {
+          margin-top: 10px;
+          max-width: 340px;
+          color: #77736b;
+          font-size: 10px;
+          line-height: 1.7;
+        }
+
+        .module-grid > .module-card .module-footer {
+          margin-top: 18px;
+          min-height: 40px;
+          padding: 0 11px !important;
+          box-sizing: border-box;
+          border: 1px solid #e2ddd5 !important;
+          border-left-width: 3px !important;
+          border-radius: 6px;
+          background: #faf8f4;
+          color: #777168;
+        }
+
+        .module-grid > .module-card .module-footer span:first-child {
+          font-size: 8px;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        .module-grid > .module-card .module-footer span:last-child {
+          width: 24px;
+          height: 24px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          border: 1px solid #e0dad1;
+          background: #fffefa;
+          font-size: 13px;
+          transition: transform 180ms ease;
+        }
+
+        .module-grid > .module-card:hover .module-footer span:last-child {
+          transform: translateX(2px);
+        }
+
+        /* Individual module accents */
+        .module-grid > .module-card:nth-child(1)::before {
+          background: #c2a267;
+        }
+
+        .module-grid > .module-card:nth-child(2)::before {
+          background: #789382;
+        }
+
+        .module-grid > .module-card:nth-child(3)::before {
+          background: #aaa092;
+        }
+
+        .module-grid > .module-card:nth-child(4)::before {
+          background: #a8b49f;
+        }
+
+        .module-grid > .module-card:nth-child(5)::before {
+          background: #7b95a5;
+        }
+
+        .module-grid > .module-card:nth-child(1) .module-footer {
+          border-left-color: #c2a267 !important;
+        }
+
+        .module-grid > .module-card:nth-child(2) .module-footer {
+          border-left-color: #789382 !important;
+        }
+
+        .module-grid > .module-card:nth-child(3) .module-footer {
+          border-left-color: #aaa092 !important;
+        }
+
+        .module-grid > .module-card:nth-child(4) .module-footer {
+          border-left-color: #a8b49f !important;
+        }
+
+        .module-grid > .module-card:nth-child(5) .module-footer {
+          border-left-color: #7b95a5 !important;
+        }
+
+        /* Enquiries gets the same box system with dark treatment */
+        .module-grid > .module-card:nth-child(6) {
+          min-height: 232px;
+          background: #1b1e1c !important;
+          border-color: #1b1e1c !important;
+          box-shadow:
+            0 10px 27px rgba(25, 27, 25, 0.12);
+        }
+
+        .module-grid > .module-card:nth-child(6):hover {
+          border-color: #3a3e3a !important;
+          box-shadow:
+            0 18px 38px rgba(25, 27, 25, 0.18);
+        }
+
+        .module-grid > .module-card:nth-child(6) .module-top > span:first-child {
+          color: #a9a59d;
+        }
+
+        .module-grid > .module-card:nth-child(6) .module-icon {
+          border-color: #454944;
+          background: #282b29;
+          color: #d1b57d;
+        }
+
+        .module-grid > .module-card:nth-child(6) .module-mini-label {
+          color: #c2a46b;
+        }
+
+        .module-grid > .module-card:nth-child(6) .module-content h3 {
+          color: #fffdf8;
+        }
+
+        .module-grid > .module-card:nth-child(6) .module-content p {
+          color: #b6b2a9;
+        }
+
+        .module-grid > .module-card:nth-child(6) .module-footer {
+          border-color: rgba(255, 255, 255, 0.12) !important;
+          background: rgba(255, 255, 255, 0.035);
+          color: #aaa69e;
+        }
+
+        .module-grid > .module-card:nth-child(6) .module-footer span:last-child {
+          border-color: rgba(255, 255, 255, 0.12);
+          background: #272a28;
+          color: #c2a46b;
+        }
+
+        @media (max-width: 1050px) {
+          .module-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 700px) {
+          .module-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+
+          .module-grid > .module-card,
+          .module-grid > .module-card:nth-child(6) {
+            min-height: 215px;
+          }
+        }
+
+
+        /* ==================================================
+           FINAL VISUAL SYSTEM — INDIVIDUAL MODULE BOXES
+           ================================================== */
+
+        .section-block {
+          padding: 24px !important;
+          border: 1px solid #d8d2c8 !important;
+          border-radius: 14px !important;
+          background: #eeece7 !important;
+          box-shadow:
+            0 10px 28px rgba(35, 32, 27, 0.045) !important;
+        }
+
+        .section-block .section-heading {
+          margin-bottom: 20px !important;
+          padding: 0 2px 18px !important;
+          border-bottom: 1px solid #ddd8cf !important;
+        }
+
+        .module-grid {
+          display: grid !important;
+          grid-template-columns: repeat(
+            3,
+            minmax(0, 1fr)
+          ) !important;
+          gap: 18px !important;
+          margin-top: 0 !important;
+        }
+
+        .module-grid > .module-card {
+          position: relative !important;
+          min-height: 245px !important;
+          padding: 20px 20px 0 !important;
+          box-sizing: border-box !important;
+          overflow: hidden !important;
+
+          border: 1px solid #d4cec3 !important;
+          border-radius: 12px !important;
+
+          background: #fffdf9 !important;
+          color: #23231f !important;
+
+          box-shadow:
+            0 9px 24px rgba(35, 32, 27, 0.065),
+            0 2px 5px rgba(35, 32, 27, 0.035) !important;
+
+          transform: translateY(0) !important;
+
+          transition:
+            transform 180ms ease,
+            box-shadow 180ms ease,
+            border-color 180ms ease !important;
+        }
+
+        .module-grid > .module-card:hover {
+          transform: translateY(-5px) !important;
+          border-color: #bdb3a3 !important;
+          box-shadow:
+            0 18px 38px rgba(35, 32, 27, 0.11),
+            0 4px 10px rgba(35, 32, 27, 0.045) !important;
+        }
+
+        .module-grid > .module-card::before {
+          content: "" !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          height: 4px !important;
+          opacity: 1 !important;
+          border-radius: 12px 12px 0 0 !important;
+        }
+
+        .module-grid > .module-card:nth-child(1)::before {
+          background: #c2a267 !important;
+        }
+
+        .module-grid > .module-card:nth-child(2)::before {
+          background: #789382 !important;
+        }
+
+        .module-grid > .module-card:nth-child(3)::before {
+          background: #9f968b !important;
+        }
+
+        .module-grid > .module-card:nth-child(4)::before {
+          background: #a8b49f !important;
+        }
+
+        .module-grid > .module-card:nth-child(5)::before {
+          background: #7b95a5 !important;
+        }
+
+        .module-grid > .module-card:nth-child(6) {
+          background: #1c1f1d !important;
+          border-color: #1c1f1d !important;
+          color: #fffdf8 !important;
+
+          box-shadow:
+            0 12px 30px rgba(25, 27, 25, 0.15) !important;
+        }
+
+        .module-grid > .module-card:nth-child(6):hover {
+          border-color: #4c514c !important;
+          box-shadow:
+            0 20px 40px rgba(25, 27, 25, 0.22) !important;
+        }
+
+        .module-grid > .module-card .module-top {
+          position: relative !important;
+          z-index: 1 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          padding-bottom: 18px !important;
+        }
+
+        .module-grid > .module-card .module-top > span:first-child {
+          color: #9b958a !important;
+          font-size: 9px !important;
+          font-weight: 800 !important;
+          letter-spacing: 0.14em !important;
+        }
+
+        .module-grid > .module-card .module-icon {
+          width: 30px !important;
+          height: 30px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border: 1px solid #ddd7cd !important;
+          border-radius: 7px !important;
+          background: #fffefa !important;
+          color: #917447 !important;
+          font-size: 13px !important;
+        }
+
+        .module-grid > .module-card .module-content {
+          position: relative !important;
+          z-index: 1 !important;
+          flex: 1 !important;
+          padding-top: 7px !important;
+        }
+
+        .module-grid > .module-card .module-mini-label {
+          display: block !important;
+          margin-bottom: 9px !important;
+          color: #a18455 !important;
+          font-size: 8px !important;
+          font-weight: 800 !important;
+          letter-spacing: 0.17em !important;
+        }
+
+        .module-grid > .module-card .module-content h3 {
+          margin: 0 !important;
+          color: #252623 !important;
+          font-size: 25px !important;
+          line-height: 1.05 !important;
+          font-weight: 500 !important;
+          letter-spacing: -0.025em !important;
+        }
+
+        .module-grid > .module-card .module-content p {
+          margin: 11px 0 0 !important;
+          max-width: 330px !important;
+          color: #77736b !important;
+          font-size: 10px !important;
+          line-height: 1.7 !important;
+        }
+
+        .module-grid > .module-card .module-footer {
+          position: relative !important;
+          z-index: 1 !important;
+          min-height: 42px !important;
+          margin-top: 18px !important;
+          padding: 0 12px !important;
+          box-sizing: border-box !important;
+
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+
+          border: 1px solid #ddd7ce !important;
+          border-radius: 7px !important;
+          background: #f7f4ee !important;
+          color: #777168 !important;
+        }
+
+        .module-grid > .module-card .module-footer span:first-child {
+          font-size: 8px !important;
+          font-weight: 800 !important;
+          letter-spacing: 0.1em !important;
+          text-transform: uppercase !important;
+        }
+
+        .module-grid > .module-card .module-footer span:last-child {
+          width: 25px !important;
+          height: 25px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+
+          border: 1px solid #dfd8cf !important;
+          border-radius: 50% !important;
+          background: #fffefa !important;
+          color: #9a7b49 !important;
+          font-size: 12px !important;
+
+          transition:
+            transform 180ms ease,
+            background 180ms ease !important;
+        }
+
+        .module-grid > .module-card:hover
+          .module-footer span:last-child {
+          transform: translateX(3px) !important;
+        }
+
+        /* Dark enquiries card */
+        .module-grid > .module-card:nth-child(6)
+          .module-top > span:first-child {
+          color: #aaa69e !important;
+        }
+
+        .module-grid > .module-card:nth-child(6)
+          .module-icon {
+          border-color: #464a46 !important;
+          background: #292c2a !important;
+          color: #d0b17b !important;
+        }
+
+        .module-grid > .module-card:nth-child(6)
+          .module-mini-label {
+          color: #c2a46b !important;
+        }
+
+        .module-grid > .module-card:nth-child(6)
+          .module-content h3 {
+          color: #fffdf8 !important;
+        }
+
+        .module-grid > .module-card:nth-child(6)
+          .module-content p {
+          color: #b5b1a9 !important;
+        }
+
+        .module-grid > .module-card:nth-child(6)
+          .module-footer {
+          border-color: rgba(
+            255,
+            255,
+            255,
+            0.12
+          ) !important;
+          background: rgba(
+            255,
+            255,
+            255,
+            0.035
+          ) !important;
+          color: #aaa69e !important;
+        }
+
+        .module-grid > .module-card:nth-child(6)
+          .module-footer span:last-child {
+          border-color: rgba(
+            255,
+            255,
+            255,
+            0.13
+          ) !important;
+          background: #282b29 !important;
+          color: #c2a46b !important;
+        }
+
+        @media (max-width: 1050px) {
+          .module-grid {
+            grid-template-columns: repeat(
+              2,
+              minmax(0, 1fr)
+            ) !important;
+          }
+        }
+
+        @media (max-width: 700px) {
+          .section-block {
+            padding: 17px !important;
+          }
+
+          .module-grid {
+            grid-template-columns: 1fr !important;
+            gap: 13px !important;
+          }
+
+          .module-grid > .module-card,
+          .module-grid > .module-card:nth-child(6) {
+            min-height: 220px !important;
+          }
+        }
+
+
+        /* ==================================================
+           DEFINITIVE MODULE CARD SEPARATION
+           ================================================== */
+
+        :global(.section-block) {
+          background: #ece9e3 !important;
+          border: 1px solid #d5cfc4 !important;
+          border-radius: 14px !important;
+          padding: 24px !important;
+        }
+
+        :global(.section-block .module-grid) {
+          display: grid !important;
+          grid-template-columns: repeat(
+            3,
+            minmax(0, 1fr)
+          ) !important;
+          gap: 20px !important;
+          margin: 0 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card) {
+          position: relative !important;
+          display: flex !important;
+          flex-direction: column !important;
+          width: 100% !important;
+          min-height: 250px !important;
+          margin: 0 !important;
+          padding: 21px !important;
+          box-sizing: border-box !important;
+          overflow: hidden !important;
+
+          border: 1px solid #cbc4b8 !important;
+          border-radius: 12px !important;
+
+          background: #ffffff !important;
+          color: #252623 !important;
+
+          box-shadow:
+            0 10px 26px rgba(40, 36, 30, 0.08),
+            0 2px 5px rgba(40, 36, 30, 0.04) !important;
+
+          opacity: 1 !important;
+          visibility: visible !important;
+          transform: none !important;
+
+          transition:
+            transform 180ms ease,
+            box-shadow 180ms ease,
+            border-color 180ms ease !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:hover) {
+          transform: translateY(-5px) !important;
+          border-color: #b7ad9f !important;
+          box-shadow:
+            0 20px 40px rgba(40, 36, 30, 0.13),
+            0 5px 12px rgba(40, 36, 30, 0.05) !important;
+        }
+
+        :global(.section-block .module-grid > .module-card::before) {
+          content: "" !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          height: 4px !important;
+          opacity: 1 !important;
+          border-radius: 12px 12px 0 0 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(1)) {
+          background: #fffdf8 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(1)::before) {
+          background: #c2a267 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(2)) {
+          background: #fbfdfb !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(2)::before) {
+          background: #789382 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(3)) {
+          background: #fcfbfa !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(3)::before) {
+          background: #a29a90 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(4)) {
+          background: #fbfcf9 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(4)::before) {
+          background: #9eaa96 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(5)) {
+          background: #fafdff !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(5)::before) {
+          background: #7b95a5 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(6)) {
+          background: #1b1e1c !important;
+          border-color: #1b1e1c !important;
+          color: #fffdf8 !important;
+          box-shadow:
+            0 12px 30px rgba(25, 27, 25, 0.16) !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(6)::before) {
+          background: #c2a46b !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(6):hover) {
+          border-color: #454a45 !important;
+          box-shadow:
+            0 20px 42px rgba(25, 27, 25, 0.23) !important;
+        }
+
+        :global(.section-block .module-grid > .module-card .module-top) {
+          flex: 0 0 auto !important;
+          position: relative !important;
+          z-index: 2 !important;
+          padding-bottom: 17px !important;
+        }
+
+        :global(.section-block .module-grid > .module-card .module-content) {
+          position: relative !important;
+          z-index: 2 !important;
+          flex: 1 1 auto !important;
+          padding-top: 8px !important;
+        }
+
+        :global(.section-block .module-grid > .module-card .module-footer) {
+          position: relative !important;
+          z-index: 2 !important;
+          flex: 0 0 auto !important;
+          margin-top: 18px !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(6) .module-content h3) {
+          color: #fffdf8 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(6) .module-content p) {
+          color: #b6b2aa !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:nth-child(6) .module-footer) {
+          border-color: rgba(255, 255, 255, 0.13) !important;
+          background: rgba(255, 255, 255, 0.035) !important;
+          color: #aaa69e !important;
+        }
+
+        @media (max-width: 1050px) {
+          :global(.section-block .module-grid) {
+            grid-template-columns: repeat(
+              2,
+              minmax(0, 1fr)
+            ) !important;
+          }
+        }
+
+        @media (max-width: 700px) {
+          :global(.section-block) {
+            padding: 17px !important;
+          }
+
+          :global(.section-block .module-grid) {
+            grid-template-columns: 1fr !important;
+            gap: 14px !important;
+          }
+
+          :global(.section-block .module-grid > .module-card),
+          :global(.section-block .module-grid > .module-card:nth-child(6)) {
+            min-height: 220px !important;
+          }
+        }
+
+
+        /* ==================================================
+           UNIFIED DARK MODULE CARD THEME
+           ================================================== */
+
+        :global(.section-block .module-grid > .module-card),
+        :global(.section-block .module-grid > .module-card:nth-child(1)),
+        :global(.section-block .module-grid > .module-card:nth-child(2)),
+        :global(.section-block .module-grid > .module-card:nth-child(3)),
+        :global(.section-block .module-grid > .module-card:nth-child(4)),
+        :global(.section-block .module-grid > .module-card:nth-child(5)),
+        :global(.section-block .module-grid > .module-card:nth-child(6)) {
+          background: #1b1e1c !important;
+          color: #fffdf8 !important;
+          border-color: #2b2f2c !important;
+          box-shadow:
+            0 12px 30px rgba(25, 27, 25, 0.15),
+            0 2px 6px rgba(25, 27, 25, 0.08) !important;
+        }
+
+        :global(.section-block .module-grid > .module-card:hover),
+        :global(.section-block .module-grid > .module-card:nth-child(1):hover),
+        :global(.section-block .module-grid > .module-card:nth-child(2):hover),
+        :global(.section-block .module-grid > .module-card:nth-child(3):hover),
+        :global(.section-block .module-grid > .module-card:nth-child(4):hover),
+        :global(.section-block .module-grid > .module-card:nth-child(5):hover),
+        :global(.section-block .module-grid > .module-card:nth-child(6):hover) {
+          background: #1b1e1c !important;
+          border-color: #55594f !important;
+          box-shadow:
+            0 20px 42px rgba(25, 27, 25, 0.22),
+            0 4px 10px rgba(25, 27, 25, 0.1) !important;
+        }
+
+        :global(.section-block .module-grid > .module-card::before),
+        :global(.section-block .module-grid > .module-card:nth-child(1)::before),
+        :global(.section-block .module-grid > .module-card:nth-child(2)::before),
+        :global(.section-block .module-grid > .module-card:nth-child(3)::before),
+        :global(.section-block .module-grid > .module-card:nth-child(4)::before),
+        :global(.section-block .module-grid > .module-card:nth-child(5)::before),
+        :global(.section-block .module-grid > .module-card:nth-child(6)::before) {
+          background: #c2a46b !important;
+        }
+
+        :global(.section-block .module-grid > .module-card .module-top > span:first-child) {
+          color: #aaa69e !important;
+        }
+
+        :global(.section-block .module-grid > .module-card .module-icon) {
+          border-color: #454944 !important;
+          background: #282b29 !important;
+          color: #d0b17b !important;
+        }
+
+        :global(.section-block .module-grid > .module-card .module-mini-label) {
+          color: #c2a46b !important;
+        }
+
+        :global(.section-block .module-grid > .module-card .module-content h3) {
+          color: #fffdf8 !important;
+        }
+
+        :global(.section-block .module-grid > .module-card .module-content p) {
+          color: #b6b2aa !important;
+        }
+
+        :global(.section-block .module-grid > .module-card .module-footer) {
+          border-color: rgba(255, 255, 255, 0.12) !important;
+          background: rgba(255, 255, 255, 0.035) !important;
+          color: #aaa69e !important;
+        }
+
+        :global(.section-block .module-grid > .module-card .module-footer span:last-child) {
+          border-color: rgba(255, 255, 255, 0.13) !important;
+          background: #282b29 !important;
+          color: #c2a46b !important;
+        }
+
+
+        /* FINAL SIDEBAR ACTIONS */
+
+        .sidebar-bottom {
+          margin-top: auto !important;
+          padding-top: 18px !important;
+          border-top: 1px solid rgba(194, 166, 111, 0.15) !important;
+        }
+
+        .sidebar-bottom .sidebar-logout {
+          width: 100% !important;
+          min-height: 42px !important;
+          padding: 0 12px !important;
+          box-sizing: border-box !important;
+
+          border: 1px solid rgba(194, 166, 111, 0.18) !important;
+          border-radius: 7px !important;
+
+          background: rgba(255, 255, 255, 0.025) !important;
+          color: rgba(255, 255, 255, 0.6) !important;
+
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+
+          font-size: 10px !important;
+          font-weight: 700 !important;
+
+          transition:
+            color 180ms ease,
+            background 180ms ease,
+            border-color 180ms ease !important;
+        }
+
+        .sidebar-bottom .sidebar-logout:hover {
+          background: rgba(194, 166, 111, 0.08) !important;
+          border-color: rgba(194, 166, 111, 0.34) !important;
+          color: rgba(255, 255, 255, 0.92) !important;
+        }
+
+        .sidebar-bottom .sidebar-arrow {
+          color: rgba(255, 255, 255, 0.28) !important;
+          font-size: 13px !important;
+        }
+
+        .sidebar-bottom .sidebar-logout:hover .sidebar-arrow {
+          color: #c3a46b !important;
+        }
+
+        @media (max-width: 760px) {
+          .sidebar-bottom {
+            margin-top: 10px !important;
+            padding-top: 10px !important;
+          }
+
+          .sidebar-bottom .sidebar-logout {
+            min-height: 40px !important;
+          }
+        }
+
+      `}</style>
     </main>
   );
 }

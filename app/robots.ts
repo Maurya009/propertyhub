@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 const SITE_URL =
-process.env.SITE_URL || "https://ymrealty.in";
+  process.env.SITE_URL || "https://propertyhub-ten.vercel.app";
 
 export default function robots(): MetadataRoute.Robots {
   return {

@@ -1,10 +1,10 @@
+export const dynamic = "force-dynamic";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { MetadataRoute } from "next";
 import { getServerApiUrl } from "./lib/api";
 
-const SITE_URL = process.env.SITE_URL || "https://ymrealty.in";
-
-export const revalidate = 3600;
+const SITE_URL =
+  process.env.SITE_URL || "https://propertyhub-ten.vercel.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
@@ -27,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const response = await fetch(`${getServerApiUrl()}/properties`, {
-      next: { revalidate: 3600 },
+      cache: "no-store",
     });
 
     if (!response.ok) {
@@ -36,7 +36,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const data = await response.json();
 
-    const properties = Array.isArray(data?.data) ? data.data : [];
+    const properties = Array.isArray(data?.data)
+  ? data.data
+  : [];
 
     const propertyPages: MetadataRoute.Sitemap = properties
       .filter((property: any) => property?._id)

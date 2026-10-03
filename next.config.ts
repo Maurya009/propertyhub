@@ -12,8 +12,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/backend-api/:path*",
-        destination:
-          "https://affectionate-learning-production-84bc.up.railway.app/api/:path*",
+        destination: "http://localhost:5000/api/:path*",
       },
     ];
   },
