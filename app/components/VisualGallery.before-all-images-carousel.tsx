@@ -170,31 +170,34 @@ export default function VisualGallery() {
             item.category === activeCategory
         );
 
-  // Visual Story uses the complete gallery collection.
-  // When a category is selected, that category's full set is shown.
-  const visualStoryItems = galleryItems.filter((item) => {
-    const title = item.title.toLowerCase();
+  const featuredItems = [
+    ...galleryItems.filter(
+      (item) => item.featured
+    ),
+  ]
+    .sort((a, b) => {
+      const aPriority =
+        originalFeaturedOrder.indexOf(a.image);
 
-    return (
-      item.category !== "Residences" &&
-      !title.includes("floor plan") &&
-      !title.includes("bhk plan") &&
-      !title.includes("plans")
-    );
-  });
+      const bPriority =
+        originalFeaturedOrder.indexOf(b.image);
 
-  const featuredItems =
-    activeCategory === "All"
-      ? [...visualStoryItems].sort((a, b) => a.order - b.order)
-      : [...visualStoryItems]
-          .filter(
-            (item) =>
-              item.category === activeCategory
-          )
-          .sort((a, b) => a.order - b.order);
+      const aKnown = aPriority !== -1;
+      const bKnown = bPriority !== -1;
 
-  /* Visual Story auto-scroll.
-     Hovering an image never pauses the carousel. */
+      if (aKnown && bKnown) {
+        return aPriority - bPriority;
+      }
+
+      if (aKnown) return -1;
+      if (bKnown) return 1;
+
+      return a.order - b.order;
+    })
+    .slice(0, 6);
+
+
+  // Auto-scroll the featured Visual Story one card at a time.
   useEffect(() => {
     const viewport = featuredViewportRef.current;
 
@@ -202,42 +205,65 @@ export default function VisualGallery() {
       return;
     }
 
-    const getStep = () => {
-      const card =
-        viewport.querySelector<HTMLElement>(
-          ".visual-gallery-featured-card"
-        );
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    if (reduceMotion) {
+      return;
+    }
+
+    let paused = false;
+
+    const handlePointerEnter = () => {
+      paused = true;
+    };
+
+    const handlePointerLeave = () => {
+      paused = false;
+    };
+
+    viewport.addEventListener(
+      "pointerenter",
+      handlePointerEnter
+    );
+
+    viewport.addEventListener(
+      "pointerleave",
+      handlePointerLeave
+    );
+
+    const timer = window.setInterval(() => {
+      if (paused) {
+        return;
+      }
 
       const track =
         viewport.querySelector<HTMLElement>(
           ".visual-story-track"
         );
 
-      if (!card || !track) {
-        return 0;
+      const card =
+        track?.querySelector<HTMLElement>(
+          ".visual-gallery-featured-card"
+        );
+
+      if (!track || !card) {
+        return;
       }
 
-      const styles = window.getComputedStyle(track);
+      const trackStyles =
+        window.getComputedStyle(track);
 
       const gap =
         parseFloat(
-          styles.columnGap ||
-            styles.gap ||
+          trackStyles.columnGap ||
+            trackStyles.gap ||
             "0"
         ) || 0;
 
-      return (
-        card.getBoundingClientRect().width +
-        gap
-      );
-    };
-
-    const advance = () => {
-      const step = getStep();
-
-      if (step <= 0) {
-        return;
-      }
+      const step =
+        card.getBoundingClientRect().width + gap;
 
       const maxScroll =
         viewport.scrollWidth -
@@ -247,73 +273,36 @@ export default function VisualGallery() {
         return;
       }
 
-      const current =
-        viewport.scrollLeft;
+      const nextPosition =
+        viewport.scrollLeft + step;
 
       if (
-        current + step >=
-        maxScroll - step * 0.45
+        viewport.scrollLeft >=
+        maxScroll - step * 0.6
       ) {
         viewport.scrollTo({
           left: 0,
-          behavior: "auto",
+          behavior: "smooth",
         });
-
-        return;
+      } else {
+        viewport.scrollTo({
+          left: Math.min(nextPosition, maxScroll),
+          behavior: "smooth",
+        });
       }
-
-      viewport.scrollBy({
-        left: step,
-        behavior: "smooth",
-      });
-    };
-
-    /* Move one image every 2 seconds. */
-    const timer =
-      window.setInterval(
-        advance,
-        2000
-      );
-
-    /*
-     * Mouse wheel works even when the pointer is
-     * directly over an image/button.
-     */
-    const handleWheel = (
-      event: WheelEvent
-    ) => {
-      if (
-        Math.abs(event.deltaY) <=
-        Math.abs(event.deltaX)
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-
-      viewport.scrollBy({
-        left: event.deltaY,
-        behavior: "auto",
-      });
-    };
-
-    /* Capture phase makes this work over child images/buttons. */
-    viewport.addEventListener(
-      "wheel",
-      handleWheel,
-      {
-        passive: false,
-        capture: true,
-      }
-    );
+    }, 3600);
 
     return () => {
       window.clearInterval(timer);
 
       viewport.removeEventListener(
-        "wheel",
-        handleWheel,
-        true
+        "pointerenter",
+        handlePointerEnter
+      );
+
+      viewport.removeEventListener(
+        "pointerleave",
+        handlePointerLeave
       );
     };
   }, [featuredItems.length]);
@@ -365,99 +354,55 @@ export default function VisualGallery() {
 
   return (
     <>
-      {/* Featured Visual Story — Automatic CSS Carousel */}
+      {/* Featured Visual Story — Auto Carousel */}
       <div
-        ref={featuredViewportRef}
         className="visual-gallery-featured visual-story-carousel"
+        ref={featuredViewportRef}
         aria-roledescription="carousel"
         aria-label="Visual story"
       >
         <div className="visual-story-track">
-
-          <div className="visual-story-group">
-            {featuredItems.map((item, position) => {
-              const index =
-                galleryItems.findIndex(
-                  (galleryItem) =>
-                    galleryItem.image === item.image
-                );
-
-              return (
-                <button
-                  key={`story-a-${item.image}`}
-                  type="button"
-                  className="visual-gallery-featured-card"
-                  onClick={() =>
-                    setSelectedIndex(index)
-                  }
-                  aria-label={`${item.title}, ${item.category}`}
-                >
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    loading={
-                      position < 3
-                        ? "eager"
-                        : "lazy"
-                    }
-                  />
-
-                  <div className="visual-gallery-card-overlay" />
-
-                  <div className="visual-gallery-card-copy">
-                    <small>
-                      {item.category}
-                    </small>
-
-                    <span>
-                      {item.title}
-                    </span>
-                  </div>
-                </button>
+          {featuredItems.map((item, position) => {
+            const index =
+              galleryItems.findIndex(
+                (galleryItem) =>
+                  galleryItem.image === item.image
               );
-            })}
-          </div>
 
-          <div className="visual-story-group" aria-hidden="true">
-            {featuredItems.map((item) => {
-              const index =
-                galleryItems.findIndex(
-                  (galleryItem) =>
-                    galleryItem.image === item.image
-                );
-
-              return (
-                <button
-                  key={`story-b-${item.image}`}
-                  type="button"
-                  tabIndex={-1}
-                  className="visual-gallery-featured-card"
-                  onClick={() =>
-                    setSelectedIndex(index)
+            return (
+              <button
+                key={item.image}
+                type="button"
+                className="visual-gallery-featured-card"
+                onClick={() =>
+                  setSelectedIndex(index)
+                }
+                aria-label={`${item.title}, ${item.category}`}
+              >
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  loading={
+                    position < 3
+                      ? "eager"
+                      : "lazy"
                   }
-                >
-                  <img
-                    src={item.image}
-                    alt=""
-                    loading="lazy"
-                  />
+                />
 
-                  <div className="visual-gallery-card-overlay" />
+                <div className="visual-gallery-card-overlay" />
 
-                  <div className="visual-gallery-card-copy">
-                    <small>
-                      {item.category}
-                    </small>
+                <div className="visual-gallery-card-copy">
+                  <small>
+                    {item.category}
+                  </small>
 
-                    <span>
-                      {item.title}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
+                  <span>
+                    {item.title}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 

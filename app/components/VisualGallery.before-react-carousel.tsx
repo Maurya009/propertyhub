@@ -193,131 +193,6 @@ export default function VisualGallery() {
           )
           .sort((a, b) => a.order - b.order);
 
-  /* Visual Story auto-scroll.
-     Hovering an image never pauses the carousel. */
-  useEffect(() => {
-    const viewport = featuredViewportRef.current;
-
-    if (!viewport || featuredItems.length < 2) {
-      return;
-    }
-
-    const getStep = () => {
-      const card =
-        viewport.querySelector<HTMLElement>(
-          ".visual-gallery-featured-card"
-        );
-
-      const track =
-        viewport.querySelector<HTMLElement>(
-          ".visual-story-track"
-        );
-
-      if (!card || !track) {
-        return 0;
-      }
-
-      const styles = window.getComputedStyle(track);
-
-      const gap =
-        parseFloat(
-          styles.columnGap ||
-            styles.gap ||
-            "0"
-        ) || 0;
-
-      return (
-        card.getBoundingClientRect().width +
-        gap
-      );
-    };
-
-    const advance = () => {
-      const step = getStep();
-
-      if (step <= 0) {
-        return;
-      }
-
-      const maxScroll =
-        viewport.scrollWidth -
-        viewport.clientWidth;
-
-      if (maxScroll <= 2) {
-        return;
-      }
-
-      const current =
-        viewport.scrollLeft;
-
-      if (
-        current + step >=
-        maxScroll - step * 0.45
-      ) {
-        viewport.scrollTo({
-          left: 0,
-          behavior: "auto",
-        });
-
-        return;
-      }
-
-      viewport.scrollBy({
-        left: step,
-        behavior: "smooth",
-      });
-    };
-
-    /* Move one image every 2 seconds. */
-    const timer =
-      window.setInterval(
-        advance,
-        2000
-      );
-
-    /*
-     * Mouse wheel works even when the pointer is
-     * directly over an image/button.
-     */
-    const handleWheel = (
-      event: WheelEvent
-    ) => {
-      if (
-        Math.abs(event.deltaY) <=
-        Math.abs(event.deltaX)
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-
-      viewport.scrollBy({
-        left: event.deltaY,
-        behavior: "auto",
-      });
-    };
-
-    /* Capture phase makes this work over child images/buttons. */
-    viewport.addEventListener(
-      "wheel",
-      handleWheel,
-      {
-        passive: false,
-        capture: true,
-      }
-    );
-
-    return () => {
-      window.clearInterval(timer);
-
-      viewport.removeEventListener(
-        "wheel",
-        handleWheel,
-        true
-      );
-    };
-  }, [featuredItems.length]);
-
   const selectedItem =
     selectedIndex !== null
       ? galleryItems[selectedIndex]
@@ -365,99 +240,55 @@ export default function VisualGallery() {
 
   return (
     <>
-      {/* Featured Visual Story — Automatic CSS Carousel */}
+      {/* Featured Visual Story — Auto Carousel */}
       <div
-        ref={featuredViewportRef}
         className="visual-gallery-featured visual-story-carousel"
+        ref={featuredViewportRef}
         aria-roledescription="carousel"
         aria-label="Visual story"
       >
         <div className="visual-story-track">
-
-          <div className="visual-story-group">
-            {featuredItems.map((item, position) => {
-              const index =
-                galleryItems.findIndex(
-                  (galleryItem) =>
-                    galleryItem.image === item.image
-                );
-
-              return (
-                <button
-                  key={`story-a-${item.image}`}
-                  type="button"
-                  className="visual-gallery-featured-card"
-                  onClick={() =>
-                    setSelectedIndex(index)
-                  }
-                  aria-label={`${item.title}, ${item.category}`}
-                >
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    loading={
-                      position < 3
-                        ? "eager"
-                        : "lazy"
-                    }
-                  />
-
-                  <div className="visual-gallery-card-overlay" />
-
-                  <div className="visual-gallery-card-copy">
-                    <small>
-                      {item.category}
-                    </small>
-
-                    <span>
-                      {item.title}
-                    </span>
-                  </div>
-                </button>
+          {featuredItems.map((item, position) => {
+            const index =
+              galleryItems.findIndex(
+                (galleryItem) =>
+                  galleryItem.image === item.image
               );
-            })}
-          </div>
 
-          <div className="visual-story-group" aria-hidden="true">
-            {featuredItems.map((item) => {
-              const index =
-                galleryItems.findIndex(
-                  (galleryItem) =>
-                    galleryItem.image === item.image
-                );
-
-              return (
-                <button
-                  key={`story-b-${item.image}`}
-                  type="button"
-                  tabIndex={-1}
-                  className="visual-gallery-featured-card"
-                  onClick={() =>
-                    setSelectedIndex(index)
+            return (
+              <button
+                key={item.image}
+                type="button"
+                className="visual-gallery-featured-card"
+                onClick={() =>
+                  setSelectedIndex(index)
+                }
+                aria-label={`${item.title}, ${item.category}`}
+              >
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  loading={
+                    position < 3
+                      ? "eager"
+                      : "lazy"
                   }
-                >
-                  <img
-                    src={item.image}
-                    alt=""
-                    loading="lazy"
-                  />
+                />
 
-                  <div className="visual-gallery-card-overlay" />
+                <div className="visual-gallery-card-overlay" />
 
-                  <div className="visual-gallery-card-copy">
-                    <small>
-                      {item.category}
-                    </small>
+                <div className="visual-gallery-card-copy">
+                  <small>
+                    {item.category}
+                  </small>
 
-                    <span>
-                      {item.title}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
+                  <span>
+                    {item.title}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
