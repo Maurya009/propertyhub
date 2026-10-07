@@ -14979,3 +14979,937 @@ body {
 
 }
 
+
+/* =========================================================
+   DESKTOP HERO — NEW FULL-FRAME BUILDING IMAGE
+   ========================================================= */
+
+@media (min-width: 781px) {
+
+  .story-site .story-hero {
+    position: sticky !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    max-height: 100svh !important;
+    overflow: hidden !important;
+    isolation: isolate !important;
+    background: #171613 !important;
+  }
+
+  /* New desktop image */
+  .story-site .story-hero::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(18,16,13,.05) 0%,
+        rgba(18,16,13,.03) 45%,
+        rgba(18,16,13,.28) 76%,
+        rgba(18,16,13,.72) 100%
+      ),
+      url("/story-house/hero-desktop.jpeg") !important;
+
+    /* COMPLETE IMAGE VISIBLE */
+    background-size: 100% 100% !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+
+    transform: none !important;
+  }
+
+  /* Hide old video/image layers on desktop */
+  .story-site .story-hero .compact-hero-side,
+  .story-site .story-hero .story-hero-side,
+  .story-site .story-hero .hero-side-video,
+  .story-site .story-hero-image {
+    display: none !important;
+  }
+
+  .story-site .story-hero-shade {
+    background: transparent !important;
+  }
+
+  /* Content stays over image */
+  .story-site .story-hero-grid {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    z-index: 10 !important;
+  }
+
+  .story-site .story-hero-copy {
+    position: absolute !important;
+    left: 6vw !important;
+    right: auto !important;
+    bottom: 14vh !important;
+    top: auto !important;
+    width: min(560px, 45vw) !important;
+    max-width: 560px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 12 !important;
+  }
+
+  .story-site .story-hero h1 {
+    max-width: 560px !important;
+    margin: 0 !important;
+    font-size: clamp(52px, 5.5vw, 82px) !important;
+    line-height: .9 !important;
+    letter-spacing: -.055em !important;
+  }
+
+  .story-site .story-hero-copy > p {
+    max-width: 480px !important;
+    margin-top: 16px !important;
+    font-size: 11px !important;
+    line-height: 1.65 !important;
+  }
+
+  .story-site .hero-actions {
+    margin-top: 20px !important;
+    transform: none !important;
+  }
+
+  .story-site .hero-actions .button-gold {
+    background: rgba(20,18,15,.16) !important;
+    color: #fffaf1 !important;
+    border: 1px solid rgba(255,255,255,.58) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+  }
+
+  /* No stats */
+  .story-site .hero-fact-card {
+    display: none !important;
+  }
+
+  /* Bottom project label */
+  .story-site .hero-bottom-note {
+    position: absolute !important;
+    left: 6vw !important;
+    bottom: 22px !important;
+    z-index: 15 !important;
+    margin: 0 !important;
+    color: rgba(255,255,255,.72) !important;
+    font-size: 7px !important;
+    letter-spacing: .18em !important;
+    text-transform: uppercase !important;
+  }
+
+  .story-site .story-hero-grid::after {
+    content: "" !important;
+    position: absolute !important;
+    left: 6vw !important;
+    bottom: 55px !important;
+    width: 48px !important;
+    height: 1px !important;
+    background: rgba(255,255,255,.58) !important;
+  }
+}
+
+
+/* =========================================================
+   HERO — FINAL DESKTOP / MOBILE SPLIT
+   ========================================================= */
+
+/* =========================
+   DESKTOP
+   ========================= */
+
+@media (min-width: 781px) {
+
+  .story-site .story-hero {
+    position: sticky !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    max-height: 100svh !important;
+    overflow: hidden !important;
+    background: #171613 !important;
+    isolation: isolate !important;
+  }
+
+  /* New desktop hero image */
+  .story-site .story-hero::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(18,16,13,.04) 0%,
+        rgba(18,16,13,.02) 45%,
+        rgba(18,16,13,.22) 72%,
+        rgba(18,16,13,.82) 100%
+      ),
+      url("/story-house/hero-desktop.jpeg") center center / 100% 100% no-repeat !important;
+
+    transform: none !important;
+  }
+
+  /* Completely remove old desktop media */
+  .story-site .story-hero .compact-hero-side,
+  .story-site .story-hero .story-hero-side,
+  .story-site .story-hero .hero-side-image,
+  .story-site .story-hero .hero-side-video,
+  .story-site .story-hero-image {
+    display: none !important;
+  }
+
+  .story-site .story-hero-shade {
+    background: transparent !important;
+  }
+
+  /* Hide the embedded disclaimer at bottom of source artwork */
+  .story-site .story-hero-grid::before {
+    content: "" !important;
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: 58px !important;
+    z-index: 13 !important;
+    pointer-events: none !important;
+    background: linear-gradient(
+      180deg,
+      rgba(18,16,13,0) 0%,
+      rgba(18,16,13,.72) 45%,
+      rgba(18,16,13,.97) 100%
+    ) !important;
+  }
+
+  .story-site .story-hero-grid {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 10 !important;
+  }
+
+  .story-site .story-hero-copy {
+    position: absolute !important;
+    left: 6vw !important;
+    right: auto !important;
+    bottom: 14vh !important;
+    top: auto !important;
+    width: min(560px, 45vw) !important;
+    max-width: 560px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 14 !important;
+  }
+
+  .story-site .story-hero h1 {
+    max-width: 560px !important;
+    margin: 0 !important;
+    font-size: clamp(50px, 5.2vw, 80px) !important;
+    line-height: .9 !important;
+    letter-spacing: -.055em !important;
+  }
+
+  .story-site .story-hero-copy > p {
+    max-width: 470px !important;
+    margin: 15px 0 0 !important;
+    font-size: 11px !important;
+    line-height: 1.65 !important;
+  }
+
+  .story-site .hero-actions {
+    margin-top: 19px !important;
+    transform: none !important;
+  }
+
+  .story-site .hero-actions .button-gold {
+    background: rgba(20,18,15,.14) !important;
+    border: 1px solid rgba(255,255,255,.58) !important;
+    color: #fffaf1 !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+  }
+
+  .story-site .hero-fact-card {
+    display: none !important;
+  }
+
+  .story-site .hero-bottom-note {
+    position: absolute !important;
+    left: 6vw !important;
+    bottom: 21px !important;
+    z-index: 16 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: rgba(255,255,255,.70) !important;
+    font-size: 7px !important;
+    letter-spacing: .18em !important;
+    text-transform: uppercase !important;
+  }
+}
+
+
+/* =========================
+   MOBILE
+   ========================= */
+
+@media (max-width: 780px) {
+
+  .story-site .story-hero {
+    position: sticky !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    max-height: 100svh !important;
+    overflow: hidden !important;
+    background: #171613 !important;
+    isolation: isolate !important;
+  }
+
+  /* Remove desktop image completely */
+  .story-site .story-hero::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* Mobile video layer */
+  .story-site .story-hero .compact-hero-side,
+  .story-site .story-hero .story-hero-side {
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100svh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 0 !important;
+  }
+
+  .story-site .story-hero .hero-side-image,
+  .story-site .story-hero .hero-side-video {
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100svh !important;
+    min-width: 100vw !important;
+    min-height: 100svh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    background: #171613 !important;
+  }
+
+  /* Full-screen fallback image */
+  .story-site .story-hero
+  .hero-side-video .hero-video-fallback {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: fill !important;
+    object-position: center center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 1 !important;
+    opacity: 0 !important;
+  }
+
+  .story-site .story-hero
+  .hero-side-video .hero-video-fallback.is-visible {
+    opacity: 1 !important;
+  }
+
+  /* Mobile video — same full-screen treatment as before */
+  .story-site .story-hero .hero-side-video video {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: fill !important;
+    object-position: center center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background:
+      url("/story-house/34.webp")
+      center center / cover
+      no-repeat !important;
+    z-index: 2 !important;
+    opacity: 1 !important;
+    transition: opacity .35s ease !important;
+  }
+
+  .story-site .story-hero
+  .hero-side-video video.is-ended {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Mobile cinematic overlay */
+  .story-site .story-hero .compact-hero-side::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 4 !important;
+    pointer-events: none !important;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(18,16,13,.15) 0%,
+        rgba(18,16,13,.08) 35%,
+        rgba(18,16,13,.48) 72%,
+        rgba(18,16,13,.84) 100%
+      ) !important;
+  }
+
+  .story-site .story-hero-image {
+    display: none !important;
+  }
+
+  .story-site .story-hero-shade {
+    background: transparent !important;
+  }
+
+  /* Mobile content */
+  .story-site .story-hero-grid {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100svh !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 10 !important;
+  }
+
+  .story-site .story-hero-copy {
+    position: absolute !important;
+    left: 18px !important;
+    right: 18px !important;
+    bottom: 142px !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: 360px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 12 !important;
+  }
+
+  .story-site .story-hero h1 {
+    max-width: 350px !important;
+    margin: 0 !important;
+    color: #fffaf1 !important;
+    font-family: Georgia, "Times New Roman", serif !important;
+    font-size: clamp(42px, 13.5vw, 58px) !important;
+    font-weight: 500 !important;
+    line-height: .88 !important;
+    letter-spacing: -.055em !important;
+  }
+
+  .story-site .story-hero-copy > p {
+    max-width: 315px !important;
+    margin: 14px 0 0 !important;
+    color: rgba(255,250,241,.72) !important;
+    font-size: 10.5px !important;
+    line-height: 1.62 !important;
+  }
+
+  /* Transparent mobile CTA */
+  .story-site .hero-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-top: 20px !important;
+    transform: none !important;
+  }
+
+  .story-site .hero-actions .button-gold {
+    background: rgba(20,18,15,.18) !important;
+    color: #fffaf1 !important;
+    border: 1px solid rgba(255,255,255,.58) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+  }
+
+  /* No stats on mobile */
+  .story-site .hero-fact-card {
+    display: none !important;
+  }
+
+  /* Bottom label */
+  .story-site .hero-bottom-note {
+    position: absolute !important;
+    left: 18px !important;
+    right: 18px !important;
+    bottom: max(16px, env(safe-area-inset-bottom) + 8px) !important;
+    z-index: 15 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: rgba(255,255,255,.60) !important;
+    font-size: 7px !important;
+    line-height: 1.2 !important;
+    letter-spacing: .18em !important;
+    text-transform: uppercase !important;
+  }
+
+  .story-site .hero-bottom-note span:nth-child(2) {
+    display: none !important;
+  }
+
+  .story-site .story-hero-grid::after {
+    content: "" !important;
+    position: absolute !important;
+    left: 18px !important;
+    bottom: 55px !important;
+    width: 46px !important;
+    height: 1px !important;
+    background: rgba(255,255,255,.55) !important;
+  }
+
+  /* Header mobile sizing */
+  .story-site .site-header .ym-brand-logo {
+    width: 68px !important;
+    height: auto !important;
+  }
+
+  .story-site .site-header-inner {
+    min-height: 68px !important;
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+}
+
+
+/* =========================================================
+   DESKTOP HERO — FINAL COMPOSITION POLISH
+   ========================================================= */
+
+@media (min-width: 781px) {
+
+  .story-site .story-hero-copy {
+    left: 6vw !important;
+    bottom: 13vh !important;
+    width: min(500px, 40vw) !important;
+    max-width: 500px !important;
+  }
+
+  .story-site .story-hero h1 {
+    max-width: 500px !important;
+    font-size: clamp(46px, 4.7vw, 70px) !important;
+    line-height: .92 !important;
+    letter-spacing: -.05em !important;
+  }
+
+  .story-site .story-hero-copy > p {
+    max-width: 420px !important;
+    margin-top: 14px !important;
+    font-size: 10px !important;
+    line-height: 1.6 !important;
+  }
+
+  .story-site .hero-actions {
+    margin-top: 17px !important;
+    gap: 9px !important;
+  }
+
+  .story-site .hero-actions .button,
+  .story-site .hero-actions .text-link {
+    font-size: 9px !important;
+  }
+
+  /* Hide the source image's bottom disclaimer area */
+  .story-site .story-hero-grid::before {
+    content: "" !important;
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: 72px !important;
+    background: linear-gradient(
+      180deg,
+      rgba(18,16,13,0) 0%,
+      rgba(18,16,13,.78) 70%,
+      rgba(18,16,13,.96) 100%
+    ) !important;
+    pointer-events: none !important;
+    z-index: 13 !important;
+  }
+
+  .story-site .hero-bottom-note {
+    left: 6vw !important;
+    bottom: 20px !important;
+    font-size: 7px !important;
+    letter-spacing: .17em !important;
+    z-index: 16 !important;
+  }
+
+}
+
+/* =========================================================
+   DESKTOP HERO — REFINED EDITORIAL COMPOSITION
+   ========================================================= */
+
+@media (min-width: 781px) {
+
+  .story-site .story-hero::before {
+    background-image:
+      linear-gradient(
+        90deg,
+        rgba(15,14,12,.34) 0%,
+        rgba(15,14,12,.16) 28%,
+        rgba(15,14,12,.02) 52%,
+        rgba(15,14,12,0) 72%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(15,14,12,.02) 45%,
+        rgba(15,14,12,.18) 72%,
+        rgba(15,14,12,.70) 100%
+      ),
+      url("/story-house/hero-desktop.jpeg") !important;
+
+    background-size: 100% 100% !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+  }
+
+  .story-site .story-hero-copy {
+    left: 6.2vw !important;
+    bottom: 10.8vh !important;
+    width: min(455px, 37vw) !important;
+    max-width: 455px !important;
+  }
+
+  .story-site .story-hero h1 {
+    max-width: 455px !important;
+    font-size: clamp(43px, 4.2vw, 64px) !important;
+    line-height: .94 !important;
+    letter-spacing: -.048em !important;
+  }
+
+  .story-site .story-hero-copy > p {
+    max-width: 390px !important;
+    margin-top: 13px !important;
+    font-size: 9.5px !important;
+    line-height: 1.62 !important;
+    color: rgba(255,250,241,.76) !important;
+  }
+
+  .story-site .hero-actions {
+    margin-top: 16px !important;
+    gap: 9px !important;
+  }
+
+  .story-site .hero-actions .button {
+    min-height: 42px !important;
+    padding: 0 18px !important;
+    font-size: 8.5px !important;
+  }
+
+  .story-site .hero-actions .text-link {
+    font-size: 8.5px !important;
+  }
+
+  .story-site .hero-bottom-note {
+    left: 6.2vw !important;
+    bottom: 19px !important;
+    font-size: 6.5px !important;
+    letter-spacing: .16em !important;
+  }
+
+  /* Clean the source artwork's bottom disclaimer */
+  .story-site .story-hero-grid::before {
+    height: 82px !important;
+    background: linear-gradient(
+      180deg,
+      rgba(15,14,12,0) 0%,
+      rgba(15,14,12,.56) 58%,
+      rgba(15,14,12,.94) 100%
+    ) !important;
+  }
+}
+
+
+/* =========================================================
+   DESKTOP HERO — MINIMAL LUXURY VERSION
+   ========================================================= */
+
+@media (min-width: 781px) {
+
+  /* Remove hero headline only */
+  .story-site .story-hero-copy h1 {
+    display: none !important;
+  }
+
+  /* Move remaining content into a cleaner position */
+  .story-site .story-hero-copy {
+    left: 6.2vw !important;
+    bottom: 12vh !important;
+    width: min(430px, 36vw) !important;
+    max-width: 430px !important;
+  }
+
+  .story-site .story-hero-copy > p {
+    max-width: 390px !important;
+    margin-top: 0 !important;
+    font-size: 10px !important;
+    line-height: 1.65 !important;
+    color: rgba(255,250,241,.78) !important;
+  }
+
+  /* Hero buttons */
+  .story-site .hero-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin-top: 18px !important;
+  }
+
+  .story-site .hero-actions .button-gold {
+    background: rgba(20,18,15,.12) !important;
+    color: #fffaf1 !important;
+    border: 1px solid rgba(255,255,255,.62) !important;
+    border-radius: 999px !important;
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+    box-shadow: none !important;
+  }
+
+  .story-site .hero-actions .text-link-light {
+    color: #fffaf1 !important;
+    border-bottom: 1px solid rgba(255,255,255,.48) !important;
+    padding-bottom: 4px !important;
+  }
+
+  /* ---------------------------------------------------------
+     HEADER — TRANSPARENT SCHEDULE A VISIT BUTTON
+     --------------------------------------------------------- */
+
+  .story-site .site-header-overlay .nav-cta {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+
+    min-height: 42px !important;
+    padding: 0 17px !important;
+
+    background: rgba(20,18,15,.08) !important;
+    color: #fff !important;
+
+    border: 1px solid rgba(255,255,255,.48) !important;
+    border-radius: 999px !important;
+
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+
+    box-shadow: none !important;
+  }
+
+  .story-site .site-header-overlay .nav-cta:hover {
+    background: rgba(20,18,15,.18) !important;
+    border-color: rgba(255,255,255,.72) !important;
+  }
+
+  .story-site .site-header-overlay .nav-cta span {
+    color: #fff !important;
+  }
+
+  /* Keep navigation clean */
+  .story-site .site-header-overlay .site-nav {
+    align-items: center !important;
+  }
+
+}
+
+
+/* =========================================================
+   DESKTOP HERO — REMOVE EXTRA DECORATIVE LINES
+   ========================================================= */
+
+@media (min-width: 781px) {
+
+  /* Remove empty kicker + its decorative line */
+  .story-site .story-hero-copy .hero-kicker {
+    display: none !important;
+  }
+
+  .story-site .story-hero-copy .hero-kicker::before,
+  .story-site .story-hero-copy .hero-kicker::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* Remove line under secondary CTA */
+  .story-site .hero-actions .text-link-light {
+    border-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Remove any inherited CTA separator */
+  .story-site .hero-actions::before,
+  .story-site .hero-actions::after {
+    display: none !important;
+    content: none !important;
+  }
+
+}
+
+
+/* =========================================================
+   HERO — REMOVE ALL EXTRA HORIZONTAL LINES
+   DESKTOP + MOBILE
+   ========================================================= */
+
+.story-site .story-hero-grid::after {
+  display: none !important;
+  content: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: none !important;
+}
+
+.story-site .hero-actions .text-link-light {
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  text-decoration: none !important;
+  padding-bottom: 0 !important;
+}
+
+.story-site .hero-actions .text-link-light::before,
+.story-site .hero-actions .text-link-light::after {
+  display: none !important;
+  content: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+
+/* =========================================================
+   HERO — FINAL LINE REMOVAL
+   ========================================================= */
+
+.story-site .story-hero .story-hero-grid::after,
+.story-site .story-hero-grid::after {
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.story-site .hero-actions .text-link-light,
+.story-site .hero-actions .text-link-light::before,
+.story-site .hero-actions .text-link-light::after {
+  border: 0 !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  background: none !important;
+  text-decoration: none !important;
+}
+
+@media (max-width: 780px) {
+
+  .story-site .story-hero .story-hero-grid::after,
+  .story-site .story-hero-grid::after {
+    content: none !important;
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .story-site .hero-actions .text-link-light {
+    border: 0 !important;
+    border-bottom: 0 !important;
+    text-decoration: none !important;
+  }
+}
+
+
+/* Remove the same hero bottom separator line on mobile */
+@media (max-width: 780px) {
+  .story-site .story-hero-grid::after {
+    content: none !important;
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: none !important;
+  }
+}
+
+/* =========================================================
+   HERO — REMOVE TOP-LEFT DECORATIVE LINE
+   ========================================================= */
+
+.story-site .story-hero .hero-kicker,
+.story-site .story-hero .hero-kicker::before,
+.story-site .story-hero .hero-kicker::after {
+  display: none !important;
+  content: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: 0 !important;
+  background: none !important;
+}
+
+
+/* =========================================================
+   HERO — REMOVE TINY ARCHITECTURAL ACCENT
+   DESKTOP + MOBILE
+   ========================================================= */
+
+.story-site .story-hero .story-hero-grid::after {
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+
+/* =========================================================
+   HERO — REMOVE 34PX TOP-LEFT ACCENT LINE
+   DESKTOP + MOBILE
+   ========================================================= */
+
+.story-site .story-hero .hero-side-image.hero-side-image-tall.hero-side-video::after {
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: none !important;
+  border: 0 !important;
+}
+
